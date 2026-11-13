@@ -1,11 +1,11 @@
-# Bilinen sınırlar
+# Known limitations
 
-- Kontrat, satıcının aynı ekonomik API gelirini başka bir kanal veya başka bir kontrat üzerinden toplamasını teknik olarak engelleyemez. Yalnızca bu kontrattan geçen siparişleri güvenceye alır.
-- Settlement müşteri onayına bağlıdır. Otomatik kalite oracle'ı veya uyuşmazlık çözümü yoktur.
-- Gateway P0 kalıcı deposu tek süreçli atomik JSON dosyasıdır. Çok instance üretim dağıtımı için transaction/unique constraint sunan bir veritabanı gerekir.
-- Gateway servis çağrısı ile onchain delivery işlemi arasında dağıtık transaction yoktur. Servis deterministik ve yeniden yürütülebilir tasarlanmıştır; üretimde pending/lease tablosu eklenmelidir.
-- Bir NFT tek serinin tüm kalan ilk-N hakkını taşır; fraksiyonlaştırma yoktur.
-- Marketplace, ikincil satış fiyatlandırması, DAO yönetişimi ve çoklu token ödemeleri P0 dışıdır.
-- Testnet deploy, gerçek explorer hash'leri ve bağımsız güvenlik denetimi henüz yoktur.
-- Güncel resmi NEAR wallet/crypto bağımlılık ağacı npm audit'te düşük önem dereceli `elliptic` uyarıları üretmektedir; high/moderate üretim uyarısı yoktur. Mainnet öncesi upstream düzeltmesiyle yeniden taranmalıdır.
-- Hukuki sınıflandırma, vergi ve menkul kıymet uyumu ürün katmanında çözülmemiştir.
+- The contract cannot technically prevent a seller from collecting the same economic API revenue through another channel or contract. It secures only orders routed through this contract.
+- Settlement depends on customer confirmation. There is no automated quality oracle or dispute resolution mechanism.
+- The P0 gateway store is an atomic JSON file designed for a single process. A multi-instance production deployment requires a database with transactions and unique constraints.
+- There is no distributed transaction between service execution and the onchain delivery call. The service is deterministic and replayable; production should add a pending execution and lease table.
+- One NFT represents the entire remaining first-N entitlement for one series. Fractional ownership is not implemented.
+- Marketplace pricing, secondary sales, DAO governance, and multi-token payments are outside P0.
+- Testnet deployment, real explorer hashes, and an independent security audit are not complete.
+- The current official NEAR wallet and crypto dependency tree reports low-severity `elliptic` findings in npm audit. There are no high- or moderate-severity production findings. Recheck upstream status before mainnet use.
+- Legal classification, taxation, and securities compliance are not addressed at the product layer.

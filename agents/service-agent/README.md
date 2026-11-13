@@ -1,5 +1,5 @@
 # Service agent
 
-P0 service agent uygulaması `gateway/` içindedir. Finalized NEAR RPC kullanarak verilen hesabın bakiyesini, kilitli bakiyesini, storage kullanımını, code hash'ini ve account/contract sınıfını döndürür. Sonuç deterministik canonical JSON ile hash'lenir ve gateway hesabı hash'i kontrata gönderir.
+The P0 service agent is implemented in `gateway/`. It uses finalized NEAR RPC to return the requested account's balance, locked balance, storage usage, code hash, and account or contract classification. The result is hashed as deterministic canonical JSON, and the gateway account submits that hash to the contract.
 
-Bu dizin PRD'deki agent sınırını görünür tutar; ikinci bir runtime veya kopya uygulama içermez.
+This directory makes the PRD agent boundary explicit without introducing a second runtime or duplicate implementation.

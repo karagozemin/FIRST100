@@ -1,16 +1,16 @@
-# Muhasebe ve protokol invariant'ları
+# Accounting and protocol invariants
 
-1. Bir seri yalnızca `LISTED` durumunda ve tam avansla bir kez fonlanır.
-2. Bir servis aynı anda en fazla bir aktif fonlanmış seriye sahiptir.
-3. Bir alıcı/seri/client nonce bileşimi yalnızca bir sipariş üretir.
-4. Sipariş depozitosu tam birim fiyattır; eksik veya fazla ödeme kabul edilmez.
-5. Her sipariş en fazla bir terminal sonuca gider: settlement veya refund.
-6. `settled_count` yalnızca NFT sahibine yönlenen kesinleşmiş satışlarda artar ve `cap_n` değerini geçmez.
-7. Cap dolduktan sonraki gelir NFT sahibine değil satıcıya yazılır.
-8. NFT transferi mevcut hesap kredilerini taşımaz; yalnızca gelecekteki settlement alıcısını değiştirir.
-9. Resolver bekleyen transfer varken aynı token'a settlement yapılamaz.
+1. A series can be funded once, only while `LISTED`, and only with the exact advance.
+2. A service can have at most one active funded series at a time.
+3. A buyer, series, and client nonce combination creates at most one order.
+4. An order deposit must exactly equal the unit price; underpayment and overpayment are rejected.
+5. Every order can reach at most one terminal outcome: settlement or refund.
+6. `settled_count` increases only for confirmed sales routed to the NFT holder and never exceeds `cap_n`.
+7. Revenue after the cap routes to the seller rather than the NFT holder.
+8. NFT transfer does not move existing account credits; it changes only the beneficiary of future settlements.
+9. Settlement cannot occur for a token while an asynchronous resolver transfer is pending.
 10. `total_liabilities = total_credits + active_order_escrow + in_flight_withdrawals`.
-11. Başarısız çekim callback'i miktarı bir kez krediye geri yazar; başarılı callback kredi üretmez.
-12. Solvency görünümü storage maliyeti ve operating reserve düşüldükten sonra yükümlülükleri karşılaştırır.
+11. A failed withdrawal callback restores the amount to credit exactly once; a successful callback creates no credit.
+12. The solvency view compares liabilities against the contract balance after storage cost and operating reserve.
 
-Bu kurallar Rust adversarial testleri ve mümkün olan durumlar için workspaces akışıyla sınanır. `audit_totals` dış denetçinin toplamları bağımsız yeniden hesaplamasını kolaylaştırır; ekonomik doğruluğun veya harici servis kalitesinin garantisi değildir.
+Rust adversarial tests and the workspaces flow exercise these rules wherever the state can be reproduced locally. `audit_totals` lets an external reviewer independently recompute aggregate liabilities; it does not guarantee economic performance or external service quality.

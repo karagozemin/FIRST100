@@ -1,26 +1,26 @@
-# Mimari ve güven sınırları
+# Architecture and trust boundaries
 
-## Kaynak dizinleri
+## Source layout
 
-- `contracts/revenue-rights`: onchain durum makinesi ve NEP-171 hakkı.
-- `gateway`: ödeme ve cüzdan kanıtını doğrulayan, servisi çalıştıran ve yanıt hash'ini zincire yazan süreç.
-- `sdk`: UI'dan bağımsız hash/RPC/ledger doğrulama araçları.
-- `app`: beş rollü React istemcisi.
-- `tests/workspaces`: derlenmiş WASM'ı güncel NEAR sandbox üzerinde çalıştıran entegrasyon testi.
-- `evidence`: yalnızca yeniden doğrulanabilir testnet işlem kimlikleri için ayrılmış alan.
+- `contracts/revenue-rights`: onchain state machine and NEP-171 revenue right.
+- `gateway`: verifies payment and wallet proof, executes the service, and commits the response hash onchain.
+- `sdk`: UI-independent hashing, RPC, and ledger verification tools.
+- `app`: React client for five protocol roles.
+- `tests/workspaces`: integration suite that executes the compiled WASM on a current NEAR sandbox.
+- `evidence`: reserved exclusively for reproducible testnet transaction evidence.
 
-## Durum makinesi
+## State machines
 
-Seri: `LISTED → FUNDED → CLOSED`; fonlanmamış seri `CANCELLED` olabilir. Aynı servis kimliği için aynı anda yalnızca bir fonlanmış aktif seri bulunabilir.
+Series: `LISTED -> FUNDED -> CLOSED`; an unfunded series can become `CANCELLED`. A service identifier can have at most one active funded series at a time.
 
-Sipariş: `PAID_PENDING → DELIVERED → SETTLED`. Son tarihe kadar kesinleşmeyen `PAID_PENDING` veya `DELIVERED` sipariş, alıcı tarafından `REFUNDED` yapılabilir. Terminal durum tekrar işlenemez.
+Order: `PAID_PENDING -> DELIVERED -> SETTLED`. A `PAID_PENDING` or `DELIVERED` order that remains unresolved after its deadline can become `REFUNDED` through a buyer call. A terminal state cannot be processed again.
 
-Çekim: `IN_FLIGHT → COMPLETED | RESTORED`. Callback sadece kontratın kendisinden gelir ve bir terminal sonuç ikinci kez uygulanamaz.
+Withdrawal: `IN_FLIGHT -> COMPLETED | RESTORED`. The callback can only originate from the contract itself, and a terminal result cannot be applied twice.
 
-## Settlement anı
+## Settlement timing
 
-Hak sahibi sipariş açılırken sabitlenmez. Müşterinin `confirm_delivery` çağrısının işlendiği blokta `owner_by_id` okunur. Böylece transferden önce tahakkuk etmiş kredi eski hesapta kalırken sonraki kesinleşen gelir yeni sahibine gider. `nft_transfer_call` resolver beklenirken `pending_transfers` kilidi settlement'ı durdurur; resolver transferi kabul eder veya geri alır, sonra kilit açılır.
+The beneficiary is not fixed when an order is created. The contract reads `owner_by_id` in the block that processes the customer's `confirm_delivery` call. Previously accrued credit therefore stays with the original account, while later confirmed revenue routes to the new owner. While an `nft_transfer_call` resolver is pending, `pending_transfers` blocks settlement for that token. The resolver then accepts or reverts the transfer before releasing the lock.
 
-## Offchain doğrulama
+## Offchain verification
 
-Gateway otorite kaynağı değildir. Kontrat/order verisini finalized RPC'den okur; NEP-413 imzasının aktif full-access key'e ait olduğunu, ödeme transaction'ının doğru signer/order sonucu içerdiğini ve request body'sinin onchain hash ile eşleştiğini kontrol eder. Çıktı kalitesi yine müşterinin onayına bağlıdır.
+The gateway is not the accounting authority. It reads contract and order state from finalized RPC, verifies that the NEP-413 signature belongs to an active full-access key, confirms that the payment transaction contains the expected signer and order result, and checks that the request body matches the onchain commitment. Output quality remains subject to customer confirmation.

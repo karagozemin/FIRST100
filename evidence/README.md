@@ -1,7 +1,7 @@
-# Testnet kanıtı
+# Testnet evidence
 
-Bu klasör gerçek, herkese açık ve yeniden doğrulanabilir testnet transaction kimlikleri içindir. Mevcut manifest `not-deployed` durumundadır; bu bilinçli ve doğru bir teslim durumudur.
+This directory is reserved for real, public, and independently reproducible testnet transaction identifiers. The current manifest is marked `not-deployed`; this is the intentional and accurate delivery state.
 
-Deploy sonrası en az şu işlemler kaydedilmelidir: deploy/init, service registration, series listing, funding/NFT mint, customer payment, delivery commitment, confirmation, NFT transfer, transfer sonrası ikinci confirmation, withdrawal. Her kimlik explorer ve finalized RPC üzerinden doğrulanmalıdır.
+After deployment, record at least these transactions: deployment and initialization, service registration, series listing, funding and NFT minting, customer payment, delivery commitment, confirmation, NFT transfer, a second confirmation after transfer, and withdrawal. Verify every identifier through an explorer and finalized RPC.
 
-`npm run verify:ledger -- evidence/testnet-transactions.json` placeholder, eksik contract ID veya deploy edilmemiş durumu başarısız sayar.
+`npm run verify:ledger -- evidence/testnet-transactions.json` rejects placeholders, a missing contract ID, and an undeployed state.

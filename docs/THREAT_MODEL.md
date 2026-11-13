@@ -1,28 +1,28 @@
-# Tehdit modeli
+# Threat model
 
-## Korunan varlıklar
+## Protected assets
 
-- Fonlama avansı, müşteri escrow'u ve hesap kredileri.
-- İlk `N` kesinleşmiş satışın devredilebilir gelir hakkı.
-- Sipariş isteği/yanıtı ile onchain hash arasındaki bağ.
-- Aynı satışın veya aynı nonce'ın tekrar işlenmemesi.
+- Funding advances, customer escrow, and account credits.
+- The transferable right to the first `N` confirmed sales.
+- The binding between an order request, service response, and onchain commitments.
+- Protection against processing the same sale or nonce more than once.
 
-## Savunmalar
+## Defenses
 
-- Yetki: servis ve seri operatöre; teslimat gateway veya operatöre; onay/refund sipariş alıcısına; transfer NFT sahibine bağlıdır.
-- Replay: buyer + series + client nonce tek kullanımlıdır. Gateway wallet challenge'ı kısa ömürlü ve tek kullanımlıdır.
-- Fiyat: exact-deposit kontrolü under/overpayment'ı reddeder.
-- Çifte settlement/refund: terminal order status ve checked arithmetic.
-- Transfer yarışı: asenkron NEP-171 resolver süresince token-level settlement kilidi.
-- Çekim yarışı: kredi önce düşülür, in-flight kaydı açılır; callback sonucu başarı veya tek geri yazmadır.
-- Gateway: finalized RPC, active access-key kontrolü, NEP-413, payment transaction ve request commitment doğrulaması.
-- Kanıt sahteciliği: ledger doğrulayıcı placeholder ve deploy edilmemiş manifesti reddeder.
+- Authorization: service and series actions belong to the operator; delivery belongs to the gateway or operator; confirmation and refund belong to the buyer; transfer belongs to the NFT owner.
+- Replay protection: each buyer, series, and client nonce tuple is single-use. Gateway wallet challenges are short-lived and single-use.
+- Pricing: exact-deposit checks reject underpayment and overpayment.
+- Double settlement or refund: terminal order states and checked arithmetic prevent repeated processing.
+- Transfer races: a token-level settlement lock remains active during asynchronous NEP-171 resolution.
+- Withdrawal races: credit is reduced before the in-flight record is created; the callback either completes the transfer or restores credit once.
+- Gateway verification: finalized RPC, active access-key verification, NEP-413, payment transaction verification, and request commitment checks.
+- Evidence integrity: the ledger verifier rejects placeholders and undeployed manifests.
 
-## Güvenilen bileşenler
+## Trusted components
 
-- NEAR konsensüsü ve seçilen finalized RPC sağlayıcıları.
-- Gateway hesabının private key'i ve gateway host güvenliği.
-- Müşterinin aldığı çıktıyı dürüst değerlendirmesi.
-- Satıcının bu servis gelirini FIRST100 dışından tahsil etmeme taahhüdü.
+- NEAR consensus and the selected finalized RPC providers.
+- The gateway account private key and gateway host security.
+- The customer's honest evaluation of the received output.
+- The seller's commitment not to divert the same service revenue outside FIRST100.
 
-Gateway ele geçirilirse yanlış bir response hash yazabilir ancak müşterinin onayı olmadan gelir settle edemez. Müşteri kötü niyetliyse doğru çıktıyı onaylamayı reddedebilir; timeout sonunda fonu iade edebilir. Bu P0'da arabuluculuk yoktur.
+A compromised gateway can commit an incorrect response hash, but it cannot settle revenue without customer confirmation. A malicious customer can refuse to confirm valid output and recover funds after the timeout. P0 does not include arbitration.

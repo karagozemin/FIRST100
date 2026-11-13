@@ -1,38 +1,38 @@
 # FIRST100
 
-FIRST100, bir AI servisinin sınırlı sayıdaki gelecekteki satışını peşin finansmana dönüştüren NEAR protokolüdür. Yatırımcı fonlamayı tamamladığında bir NEP-171 gelir hakkı NFT'si alır. Her müşteri satışı zincirde ödenir; gateway gerçek servis çıktısının hash'ini kaydeder; müşteri çıktıyı onayladığında gelir o anda NFT'yi elinde tutan hesaba tahakkuk eder.
+FIRST100 is a NEAR protocol that turns a bounded set of future AI service sales into upfront financing. When an investor funds a series, the investor receives a NEP-171 revenue-right NFT. Each customer sale is paid onchain; the gateway commits the real service output hash; and, after customer confirmation, revenue accrues to the account that owns the NFT at that settlement moment.
 
-Bu depo PRD v2.0'ın P0 çekirdeğini uygular. Testnet deploy'u henüz yapılmadığı için gerçek işlem hash'i iddia etmez; kanıt dosyası bilerek `not-deployed` durumundadır.
+This repository implements the P0 core defined in PRD v2.0. It does not claim a testnet deployment or real transaction hashes yet; the evidence manifest is intentionally marked `not-deployed`.
 
-## Çalışan kapsam
+## Implemented scope
 
-- Rust/NEAR kontratı: servis kaydı, seri listeleme, tek seferlik finansman, NFT mint, ücretli sipariş, teslimat hash'i, müşteri onayı, timeout iadesi ve pull-payment çekimi.
-- Gelir hakkı: geçmiş tahakkuk eski hesapta kalır; transferden sonra kesinleşen ilk `N` satış yeni NFT sahibine gider; `N` sonrasındaki satışlar satıcıya döner.
-- NEP-171: `nft_transfer`, `nft_transfer_call` ve resolver. Asenkron transfer sonuçlanana kadar settlement kilitlidir.
-- Muhasebe: kredi, escrow ve in-flight çekim toplamları; taşma/alt-taşma koruması; başarısız transferde tek seferlik geri yazma; denetlenebilir `audit_totals` görünümü.
-- Gateway: finalized NEAR RPC, NEP-413 cüzdan kanıtı, ödeme işlemi doğrulaması, istek hash'i kontrolü, kalıcı/idempotent kayıt ve gerçek NEAR hesap araştırma servisi.
-- React uygulaması: satıcı, yatırımcı, müşteri, hak sahibi ve kanıt ekranları.
-- SDK: canonical JSON hash'leme, RPC istemcisi ve bağımsız ledger replay doğrulayıcısı.
+- Rust/NEAR contract: service registration, series listing, one-time funding, NFT minting, paid orders, delivery commitments, customer confirmation, timeout refunds, and pull-payment withdrawals.
+- Revenue rights: prior accrual remains with the original account; after transfer, the next confirmed sales within the first `N` route to the new NFT owner; sales after `N` return to the seller.
+- NEP-171: `nft_transfer`, `nft_transfer_call`, and asynchronous resolution. Settlement is locked while a transfer resolver is pending.
+- Accounting: credits, escrow, and in-flight withdrawal totals; checked arithmetic; one-time credit restoration after failed transfers; and an auditable `audit_totals` view.
+- Gateway: finalized NEAR RPC, NEP-413 wallet proof, payment transaction verification, request commitment checks, persistent idempotency records, and a real NEAR account research service.
+- React application: seller, investor, customer, holder, and proof workflows.
+- SDK: canonical JSON hashing, RPC client utilities, and an independent ledger replay verifier.
 
-## Mimari
+## Architecture
 
 ```text
-Seller ──register/list──▶ NEAR contract ◀──fund/mint── Investor
-                              ▲   │                         │
-                              │   └── NEP-171 future right ─┘
-Customer ──pay order──────────┤
-   │                          │
-   └──NEP-413──▶ Gateway ──delivery hash──▶ contract
-        │            │                         │
-        │            └── finalized RPC data   └──buyer confirm
-        └──────── verified output ◀────────────── revenue credit
+Seller --register/list--> NEAR contract <--fund/mint-- Investor
+                              ^   |                         |
+                              |   +-- NEP-171 future right -+
+Customer --pay order----------+
+   |                          |
+   +--NEP-413--> Gateway --delivery hash--> contract
+        |            |                         |
+        |            +-- finalized RPC data   +--buyer confirm
+        +-------- verified output <-------------- revenue credit
 ```
 
-Detaylar: [mimari](docs/ARCHITECTURE.md), [invariant'lar](docs/INVARIANTS.md), [tehdit modeli](docs/THREAT_MODEL.md), [bilinen sınırlar](docs/KNOWN_LIMITATIONS.md).
+See [architecture](docs/ARCHITECTURE.md), [invariants](docs/INVARIANTS.md), [threat model](docs/THREAT_MODEL.md), and [known limitations](docs/KNOWN_LIMITATIONS.md).
 
-## Hızlı başlangıç
+## Quick start
 
-Gereksinimler: Node.js 22+, npm, Rust 1.95 ve `wasm32-unknown-unknown`. Build script'i resmi cargo-near 0.23.0 binary'sini platforma göre proje cache'ine indirir ve çalıştırmadan önce sürümünü doğrular.
+Requirements: Node.js 22+, npm, Rust 1.95, and the `wasm32-unknown-unknown` target. The build script downloads the official cargo-near 0.23.0 binary into the project cache for the current platform and verifies its version before use.
 
 ```bash
 npm install
@@ -43,33 +43,33 @@ npm run build:contract
 npm run test:workspaces
 ```
 
-`test:workspaces`, NEAR sandbox 2.14.0 binary'sini proje içindeki `.cache` klasörüne indirir ve sürümünü çalıştırmadan önce doğrular. Desteklenen geliştirme platformları Apple Silicon macOS ve x86_64 Linux'tur.
+`test:workspaces` downloads NEAR sandbox 2.14.0 into the project-local `.cache` directory and verifies its version before execution. Supported development platforms are Apple Silicon macOS and x86_64 Linux.
 
-Yerel UI ve gateway:
+Run the local gateway and UI:
 
 ```bash
 npm run dev:gateway
 npm run dev:app
 ```
 
-`.env` içinde gerçek `CONTRACT_ID`, gateway hesabı ve gateway private key'i gerekir. Private key'i repoya eklemeyin.
+A real `CONTRACT_ID`, gateway account, and gateway private key must be configured in `.env`. Never commit the private key.
 
-## Testler
+## Tests
 
 ```bash
-npm run test:contract      # 31 Rust birim/adversarial testi
-npm run test -w gateway    # ödeme, auth, hash ve idempotency entegrasyonu
-npm run test -w sdk        # canonical hash ve ledger doğrulama
-npm run test:workspaces    # gerçek WASM + 6 sandbox hesabı
-npm run test:e2e           # beş rollü UI için Chromium smoke testi
-npm run build              # gateway, UI ve SDK TypeScript üretimi
+npm run test:contract      # 31 Rust unit and adversarial tests
+npm run test -w gateway    # payment, authentication, hash, and idempotency integration tests
+npm run test -w sdk        # canonical hashing and ledger replay tests
+npm run test:workspaces    # optimized WASM with six sandbox accounts
+npm run test:e2e           # Chromium smoke test across all five UI roles
+npm run build              # production builds for gateway, UI, and SDK
 ```
 
-Sandbox testi şu akışı aynı zincir durumunda doğrular: satıcı kayıt/listeler → yatırımcı A fonlar → müşteri C öder/onaylar → A'nın NFT'si B'ye geçer → müşteri D öder/onaylar → A'nın eski kredisi korunur, yeni kredi B'ye gider → cap sonrası satış satıcıya döner → toplam yükümlülükler uzlaşır.
+The sandbox suite verifies one continuous protocol flow: the seller registers and lists a series; investor A funds it; customer C pays and confirms; A transfers the NFT to B; customer D pays and confirms; A retains the prior credit while B receives the new credit; a sale after the cap routes to the seller; and total liabilities reconcile.
 
-## Testnet deploy
+## Testnet deployment
 
-Önce kontrol ettiğiniz testnet hesaplarını ayarlayın:
+Set testnet accounts that you control:
 
 ```bash
 export CONTRACT_ID=first100-yourname.testnet
@@ -77,37 +77,37 @@ export OWNER_ID=yourname.testnet
 npm run deploy:testnet
 ```
 
-Deploy script'i imza için yerel NEAR keychain kullanır; gizli anahtar kabul etmez. İşlem tamamlandıktan sonra yalnızca gerçek hash'leri `evidence/testnet-transactions.json` içine yazın ve doğrulayın:
+The deployment script signs through the local NEAR keychain and does not accept a raw private key. After deployment, record only real transaction hashes in `evidence/testnet-transactions.json`, then verify them:
 
 ```bash
 npm run verify:ledger -- evidence/testnet-transactions.json
 ```
 
-Doğrulayıcı placeholder veya `not-deployed` kanıtını başarılı saymaz.
+The verifier rejects placeholders and the `not-deployed` state.
 
-## Kontratın para girişleri
+## Contract deposits
 
-| Metot | Ekli depozito |
+| Method | Attached deposit |
 | --- | ---: |
-| `register_service` | tam `0.01 NEAR` |
-| `create_series` | tam `0.02 NEAR` |
-| `fund_series` | tam seri avansı |
-| `create_order` | tam birim fiyat |
+| `register_service` | exactly `0.01 NEAR` |
+| `create_series` | exactly `0.02 NEAR` |
+| `fund_series` | exactly the configured advance |
+| `create_order` | exactly the unit price |
 | `nft_transfer*` | `1 yoctoNEAR` |
 | `withdraw` | `1 yoctoNEAR` |
 
-Tüm finansal miktarlar JSON'da decimal yoctoNEAR string'i olarak taşınır. Timestamp'ler de JS precision kaybını önlemek için decimal nanosaniye string'idir.
+All financial amounts are transported as decimal yoctoNEAR strings in JSON. Timestamps are also decimal nanosecond strings to prevent JavaScript precision loss.
 
-## Teslim durumu
+## Delivery status
 
-- Yerel üretim build'i: hazır.
-- Birim/gateway/SDK testleri: geçiyor.
-- NEAR sandbox uçtan uca testleri: geçiyor.
-- Testnet deploy ve gerçek explorer hash'leri: **yapılmadı**.
-- Harici güvenlik denetimi: **yapılmadı**.
+- Local production build: complete.
+- Contract, gateway, and SDK tests: passing.
+- NEAR sandbox end-to-end tests: passing.
+- Testnet deployment and real explorer hashes: **not completed**.
+- Independent security audit: **not completed**.
 
-Yarışma metni için [HACKATHON_SUBMISSION.md](HACKATHON_SUBMISSION.md), 90 saniyelik akış için [demo senaryosu](docs/DEMO_SCRIPT.md) kullanılabilir.
+Use [HACKATHON_SUBMISSION.md](HACKATHON_SUBMISSION.md) for the submission draft and [the demo script](docs/DEMO_SCRIPT.md) for the 90-second walkthrough.
 
-## Lisans
+## License
 
-MIT — bkz. [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).

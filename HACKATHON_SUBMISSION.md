@@ -1,6 +1,6 @@
 # FIRST100 — Submission draft
 
-> Durum: Yerel P0 ve sandbox kanıtı hazır. Testnet URL/hash alanları gerçek deploy yapılana kadar boş bırakılmalıdır.
+> Status: Local P0 and sandbox evidence are complete. Keep testnet URL and hash fields empty until a real deployment exists.
 
 ## One-liner
 
