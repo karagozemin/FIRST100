@@ -1,0 +1,7 @@
+{
+  "network": "testnet",
+  "contractId": "",
+  "rpcUrl": "https://rpc.testnet.near.org",
+  "status": "not-deployed",
+  "transactions": {}
+}

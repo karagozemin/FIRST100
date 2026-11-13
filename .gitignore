@@ -1,0 +1,13 @@
+target/
+node_modules/
+dist/
+.env
+gateway/data/*.json
+!gateway/data/.gitkeep
+app/.vite/
+.cache/
+.DS_Store
+*.log
+*.tsbuildinfo
+playwright-report/
+test-results/

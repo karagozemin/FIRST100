@@ -1,0 +1,35 @@
+{
+  "name": "first100",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "gateway",
+    "app",
+    "sdk",
+    "tests/workspaces"
+  ],
+  "scripts": {
+    "build": "npm run build -w gateway && npm run build -w app && npm run build -w sdk",
+    "test": "cargo test -p first100-revenue-rights --lib && npm run test -w gateway && npm run test -w sdk",
+    "test:contract": "cargo test -p first100-revenue-rights --lib",
+    "test:workspaces": "bash scripts/test-workspaces.sh",
+    "test:e2e": "playwright test",
+    "build:contract": "bash scripts/build-contract.sh",
+    "deploy:testnet": "bash scripts/deploy-testnet.sh",
+    "dev:gateway": "npm run dev -w gateway",
+    "dev:app": "npm run dev -w app",
+    "verify:ledger": "npm run verify:ledger -w sdk"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "overrides": {
+    "near-sandbox": {
+      "tar": "7.5.23"
+    }
+  },
+  "devDependencies": {
+    "@playwright/test": "1.65.0",
+    "near-sandbox": "^0.1.5"
+  }
+}

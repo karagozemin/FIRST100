@@ -1,0 +1,15 @@
+{
+  "name": "@first100/workspaces-tests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx --test src/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.1",
+    "near-sandbox": "0.1.5",
+    "near-workspaces": "5.0.0",
+    "tsx": "^4.20.6"
+  }
+}
