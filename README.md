@@ -1,75 +1,207 @@
 # FIRST100
 
-FIRST100 is a NEAR protocol that turns a bounded set of future AI service sales into upfront financing. When an investor funds a series, the investor receives a NEP-171 revenue-right NFT. Each customer sale is paid onchain; the gateway commits the real service output hash; and, after customer confirmation, revenue accrues to the account that owns the NFT at that settlement moment.
+**Verifiable, transferable revenue rights for paid AI services on NEAR.**
 
-This repository implements the P0 core defined in PRD v2.0. It does not claim a testnet deployment or real transaction hashes yet; the evidence manifest is intentionally marked `not-deployed`.
+[![CI](https://github.com/karagozemin/FIRST100/actions/workflows/ci.yml/badge.svg)](https://github.com/karagozemin/FIRST100/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![NEAR](https://img.shields.io/badge/NEAR-Rust-00C08B)](https://near.org/)
 
-## Implemented scope
+FIRST100 lets an AI service finance a bounded set of future sales without selling the company, API ownership, or all future revenue. A seller lists the first `N` eligible sales, an investor funds the series and receives a NEP-171 revenue-right NFT, and each buyer-confirmed sale is routed by the contract to the NFT owner at settlement time.
 
-- Rust/NEAR contract: service registration, series listing, one-time funding, NFT minting, paid orders, delivery commitments, customer confirmation, timeout refunds, and pull-payment withdrawals.
-- Revenue rights: prior accrual remains with the original account; after transfer, the next confirmed sales within the first `N` route to the new NFT owner; sales after `N` return to the seller.
-- NEP-171: `nft_transfer`, `nft_transfer_call`, and asynchronous resolution. Settlement is locked while a transfer resolver is pending.
-- Accounting: credits, escrow, and in-flight withdrawal totals; checked arithmetic; one-time credit restoration after failed transfers; and an auditable `audit_totals` view.
-- Gateway: finalized NEAR RPC, NEP-413 wallet proof, payment transaction verification, request commitment checks, persistent idempotency records, and a real NEAR account research service.
-- React application: seller, investor, customer, holder, and proof workflows.
-- SDK: canonical JSON hashing, RPC client utilities, and an independent ledger replay verifier.
+The repository contains the complete P0 implementation defined by PRD v2.0: the NEAR contract, authenticated service gateway, SDK, five-role web application, sandbox integration tests, evidence verifier, and deployment tooling.
 
-## Architecture
+> **Current status:** local builds and automated tests pass. Testnet deployment, real explorer evidence, and an independent security audit are not yet complete. The repository never substitutes placeholders for those claims.
 
-```text
-Seller --register/list--> NEAR contract <--fund/mint-- Investor
-                              ^   |                         |
-                              |   +-- NEP-171 future right -+
-Customer --pay order----------+
-   |                          |
-   +--NEP-413--> Gateway --delivery hash--> contract
-        |            |                         |
-        |            +-- finalized RPC data   +--buyer confirm
-        +-------- verified output <-------------- revenue credit
+## Why FIRST100
+
+Traditional funding models sell broad ownership or create fixed debt. FIRST100 isolates a narrower asset: a contract-managed right to a finite number of future, paid, buyer-confirmed service calls.
+
+| Participant | What they provide | What they receive |
+| --- | --- | --- |
+| Seller | A service, price, cap, expiration, and funding terms | Upfront financing and revenue after the cap |
+| Investor | The exact configured advance | A transferable NFT that routes the remaining first-`N` settlements |
+| Customer | Exact payment and explicit output confirmation | A payment-gated service result with request and response commitments |
+| Auditor | No trust assumption about the UI or gateway cache | Contract views, events, transaction hashes, and replayable accounting |
+
+The NFT does not represent equity, a guaranteed yield, control of the service, prior accruals, or revenue collected outside this protocol.
+
+## Protocol at a glance
+
+```mermaid
+flowchart LR
+    S[Seller] -->|Register service and list series| C[NEAR contract]
+    I[Investor] -->|Fund exact advance| C
+    C -->|Mint revenue-right NFT| I
+    B[Customer] -->|Pay and commit request hash| C
+    B -->|NEP-413 authorization| G[Gateway]
+    G -->|Verify payment and execute service| R[Finalized NEAR RPC]
+    G -->|Commit response hash| C
+    B -->|Confirm delivery| C
+    C -->|Credit current NFT owner until cap| H[Holder]
+    C -->|Credit seller after cap| S
 ```
 
-See [architecture](docs/ARCHITECTURE.md), [invariants](docs/INVARIANTS.md), [threat model](docs/THREAT_MODEL.md), and [known limitations](docs/KNOWN_LIMITATIONS.md).
+The gateway proves payment and response integrity; the customer remains responsible for deciding whether the output is acceptable. The contract is the accounting authority.
+
+## How it works
+
+1. **Register:** the seller registers a service operator, gateway account, and endpoint commitment.
+2. **List:** the seller defines a unique series, advance, unit price, sale cap, expiration, and confirmation timeout.
+3. **Fund:** one investor attaches the exact advance. The contract credits the seller and mints `right:<series_id>` to the investor.
+4. **Pay:** a customer attaches the exact unit price and commits a canonical request hash onchain.
+5. **Execute:** the gateway verifies the finalized payment transaction, NEP-413 proof, active account key, and request commitment before running the service.
+6. **Commit:** the gateway submits the response hash to the contract.
+7. **Confirm:** the customer confirms the same response hash. The contract reads the NFT owner in that block and credits the beneficiary.
+8. **Transfer:** moving the NFT changes only future settlement routing. Previously accrued credit remains with the original account.
+9. **Withdraw:** beneficiaries use pull payments. A failed NEAR transfer restores credit exactly once through the callback.
+
+## Core guarantees
+
+- A series can be funded only once and only with the exact advance.
+- One service can have at most one active funded series.
+- Buyer, series, and client nonce tuples cannot be replayed.
+- An order reaches at most one terminal accounting outcome: settlement or refund.
+- `settled_count` never exceeds `cap_n`.
+- Revenue after the cap returns to the seller.
+- Existing credits never move with the NFT.
+- Settlement is blocked while an asynchronous `nft_transfer_call` resolver is pending.
+- Credits, active escrow, and in-flight withdrawals reconcile through `audit_totals`.
+- Failed withdrawals restore credit once; completed withdrawals do not recreate credit.
+
+The complete rationale, lifecycle, accounting model, trust boundaries, and failure behavior are documented in:
+
+## [Read the architecture document →](docs/ARCHITECTURE.md)
+
+Supporting documents:
+
+- [Protocol invariants](docs/INVARIANTS.md)
+- [Threat model](docs/THREAT_MODEL.md)
+- [Known limitations](docs/KNOWN_LIMITATIONS.md)
+- [90-second demo script](docs/DEMO_SCRIPT.md)
+- [Hackathon submission draft](HACKATHON_SUBMISSION.md)
+
+## Repository structure
+
+| Path | Responsibility |
+| --- | --- |
+| `contracts/revenue-rights` | Rust contract, accounting state machine, events, and NEP-171 implementation |
+| `gateway` | Payment and wallet verification, service execution, response commitment, and durable local records |
+| `sdk` | RPC helpers, canonical hashing, amount conversion, and independent ledger replay |
+| `app` | React interface for seller, investor, customer, holder, and auditor workflows |
+| `tests/workspaces` | Optimized WASM tests against NEAR sandbox with six accounts |
+| `tests/e2e` | Browser-level smoke coverage for all five UI roles |
+| `artifacts` | Optimized contract WASM and its SHA-256 checksum |
+| `evidence` | Testnet evidence manifest; intentionally `not-deployed` until real hashes exist |
+| `scripts` | Reproducible contract build, sandbox test, and testnet deployment commands |
+| `docs` | Architecture, invariants, threat model, limitations, and demo guidance |
 
 ## Quick start
 
-Requirements: Node.js 22+, npm, Rust 1.95, and the `wasm32-unknown-unknown` target. The build script downloads the official cargo-near 0.23.0 binary into the project cache for the current platform and verifies its version before use.
+### Requirements
+
+- Node.js 22 or newer
+- npm
+- Rust 1.95
+- `wasm32-unknown-unknown` Rust target
+- `curl` and `tar` for pinned tool downloads
+
+The build script downloads the official cargo-near `0.23.0` binary into `.cache`, selects the correct platform artifact, and verifies its version before use. The workspace test script does the same for NEAR sandbox `2.14.0`.
 
 ```bash
 npm install
 rustup target add wasm32-unknown-unknown --toolchain 1.95.0
 cp .env.example .env
-npm test
-npm run build:contract
-npm run test:workspaces
 ```
 
-`test:workspaces` downloads NEAR sandbox 2.14.0 into the project-local `.cache` directory and verifies its version before execution. Supported development platforms are Apple Silicon macOS and x86_64 Linux.
+### Run the application
 
-Run the local gateway and UI:
+Configure `.env` with a real contract ID, gateway account, and gateway private key. Never commit secrets.
 
 ```bash
 npm run dev:gateway
 npm run dev:app
 ```
 
-A real `CONTRACT_ID`, gateway account, and gateway private key must be configured in `.env`. Never commit the private key.
+Default local endpoints:
 
-## Tests
+- Web application: Vite development URL printed by `dev:app`
+- Gateway: `http://localhost:8787`
+- Gateway health: `GET /health`
+
+## Build and test
 
 ```bash
-npm run test:contract      # 31 Rust unit and adversarial tests
-npm run test -w gateway    # payment, authentication, hash, and idempotency integration tests
-npm run test -w sdk        # canonical hashing and ledger replay tests
-npm run test:workspaces    # optimized WASM with six sandbox accounts
-npm run test:e2e           # Chromium smoke test across all five UI roles
-npm run build              # production builds for gateway, UI, and SDK
+npm test                    # 31 contract + 7 gateway + 6 SDK tests
+npm run build               # gateway, web application, and SDK production builds
+npm run build:contract      # optimized WASM and checksum
+npm run test:workspaces     # 5 end-to-end protocol tests on NEAR sandbox
+npm run test:e2e            # Chromium UI smoke test
 ```
 
-The sandbox suite verifies one continuous protocol flow: the seller registers and lists a series; investor A funds it; customer C pays and confirms; A transfers the NFT to B; customer D pays and confirms; A retains the prior credit while B receives the new credit; a sale after the cap routes to the seller; and total liabilities reconcile.
+The sandbox suite deploys the optimized WASM and uses six isolated accounts to verify:
+
+- one-time funding and NFT minting;
+- first settlement to investor A;
+- NFT transfer from A to B;
+- preservation of A's prior credit;
+- next settlement to B;
+- post-cap revenue routing to the seller; and
+- reconciliation of aggregate liabilities.
+
+The committed WASM checksum is stored in [`artifacts/first100_revenue_rights.wasm.sha256`](artifacts/first100_revenue_rights.wasm.sha256).
+
+## Contract interface
+
+### State-changing methods
+
+| Method | Caller | Deposit | Purpose |
+| --- | --- | ---: | --- |
+| `register_service` | Service operator | exactly `0.01 NEAR` | Register a service and authorized gateway |
+| `set_service_active` | Service operator | none | Pause or resume new orders |
+| `create_series` | Service operator | exactly `0.02 NEAR` | Define funding and revenue-right terms |
+| `cancel_unfunded_series` | Seller | none | Cancel a listed series before funding |
+| `fund_series` | Investor | exact advance | Credit the seller and mint the NFT |
+| `create_order` | Customer | exact unit price | Escrow payment and commit the request hash |
+| `submit_delivery_hash` | Gateway or operator | none | Commit the service response hash |
+| `confirm_delivery` | Order buyer | none | Settle escrow to the current beneficiary |
+| `claim_refund` | Order buyer | none | Recover unresolved escrow after the deadline |
+| `close_expired_series` | Any account | none | Close an expired series with no open orders |
+| `withdraw` | Credited account | `1 yoctoNEAR` | Start an asynchronous pull-payment transfer |
+| `nft_transfer*` | NFT owner or approved account | `1 yoctoNEAR` | Transfer future settlement rights |
+
+### Important views
+
+`get_service`, `get_series`, `get_order`, `get_credit`, `get_withdrawal`, `get_active_series`, `get_open_order_count`, `is_transfer_pending`, `audit_totals`, `nft_token`, and `nft_metadata`.
+
+Financial values are decimal yoctoNEAR strings in JSON. Nanosecond timestamps are also strings to avoid JavaScript integer precision loss.
+
+## Gateway API
+
+| Route | Purpose |
+| --- | --- |
+| `GET /health` | Runtime, network, contract, and trust-boundary status |
+| `GET /services/:serviceId/quote` | Finalized active-series terms from the contract |
+| `POST /orders/:orderId/challenge` | Short-lived, single-use wallet authorization challenge |
+| `POST /orders/:orderId/execute` | Authenticated payment verification and service execution |
+| `GET /orders/:orderId/status` | Onchain order state plus local execution record |
+
+The gateway currently runs a deterministic NEAR account research service. It returns finalized balance, locked balance, storage usage, code hash, account classification, and source metadata.
+
+## Evidence and verification
+
+The evidence verifier is designed to fail closed. It rejects an undeployed manifest, a missing contract ID, placeholder hashes, failed transactions, wrong receivers, missing terminal events, cap violations, duplicate terminal outcomes, and totals that do not reconcile with `audit_totals`.
+
+After a real deployment, populate `evidence/testnet-transactions.json` and run:
+
+```bash
+npm run verify:ledger -- evidence/testnet-transactions.json
+```
+
+Until then, the manifest remains intentionally marked `not-deployed`.
 
 ## Testnet deployment
 
-Set testnet accounts that you control:
+The deployment command uses the local NEAR keychain and never accepts a raw private key as a script argument.
 
 ```bash
 export CONTRACT_ID=first100-yourname.testnet
@@ -77,36 +209,18 @@ export OWNER_ID=yourname.testnet
 npm run deploy:testnet
 ```
 
-The deployment script signs through the local NEAR keychain and does not accept a raw private key. After deployment, record only real transaction hashes in `evidence/testnet-transactions.json`, then verify them:
+After deployment, record real transactions, run the verifier, and update the delivery status. Do not replace missing evidence with examples that look real.
 
-```bash
-npm run verify:ledger -- evidence/testnet-transactions.json
-```
+## Security and limitations
 
-The verifier rejects placeholders and the `not-deployed` state.
+This is testnet-oriented P0 software, not audited production financial infrastructure. In particular:
 
-## Contract deposits
+- FIRST100 cannot prevent a seller from routing equivalent economic activity outside the protocol.
+- Customer confirmation is a declared trust boundary; P0 has no quality oracle or arbitration.
+- The gateway JSON store is suitable for a single process, not a multi-instance production cluster.
+- Legal classification, taxation, and securities compliance are outside the implementation.
 
-| Method | Attached deposit |
-| --- | ---: |
-| `register_service` | exactly `0.01 NEAR` |
-| `create_series` | exactly `0.02 NEAR` |
-| `fund_series` | exactly the configured advance |
-| `create_order` | exactly the unit price |
-| `nft_transfer*` | `1 yoctoNEAR` |
-| `withdraw` | `1 yoctoNEAR` |
-
-All financial amounts are transported as decimal yoctoNEAR strings in JSON. Timestamps are also decimal nanosecond strings to prevent JavaScript precision loss.
-
-## Delivery status
-
-- Local production build: complete.
-- Contract, gateway, and SDK tests: passing.
-- NEAR sandbox end-to-end tests: passing.
-- Testnet deployment and real explorer hashes: **not completed**.
-- Independent security audit: **not completed**.
-
-Use [HACKATHON_SUBMISSION.md](HACKATHON_SUBMISSION.md) for the submission draft and [the demo script](docs/DEMO_SCRIPT.md) for the 90-second walkthrough.
+Read the full [threat model](docs/THREAT_MODEL.md) and [known limitations](docs/KNOWN_LIMITATIONS.md) before deployment.
 
 ## License
 
