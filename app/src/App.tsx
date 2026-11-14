@@ -1,71 +1,168 @@
-import { useEffect, useState } from "react";
-import type { Wallet } from "@near-wallet-selector/core";
-import { contractId, getWalletKit } from "./near";
-import { Seller } from "./screens/Seller";
-import { Investor } from "./screens/Investor";
-import { Customer } from "./screens/Customer";
-import { Holder } from "./screens/Holder";
-import { Proof } from "./screens/Proof";
-import type { ActionProof } from "./types";
+import logo from "../../first100-logo.png";
 
-const tabs = ["Seller", "Investor", "Customer", "Holder", "Proof"] as const;
-type Tab = typeof tabs[number];
+const githubUrl = "https://github.com/karagozemin/FIRST100";
+const architectureUrl = `${githubUrl}/blob/main/docs/ARCHITECTURE.md`;
+
+function Arrow() {
+  return <span aria-hidden="true">↗</span>;
+}
+
+function Brand() {
+  return <a className="brand" href="#top" aria-label="FIRST100 home">
+    <span className="brand-mark"><img src={logo} alt="" /></span>
+    <span>FIRST100</span>
+  </a>;
+}
 
 export default function App() {
-  const [tab, setTab] = useState<Tab>("Seller");
-  const [accountId, setAccountId] = useState<string>();
-  const [wallet, setWallet] = useState<Wallet>();
-  const [proofs, setProofs] = useState<ActionProof[]>(() => JSON.parse(localStorage.getItem("first100:proofs") ?? "[]") as ActionProof[]);
-
-  useEffect(() => {
-    let subscription: { unsubscribe(): void } | undefined;
-    void getWalletKit().then(({ selector }) => {
-      const sync = async (state: ReturnType<typeof selector.store.getState>) => {
-        const account = state.accounts.find((item) => item.active) ?? state.accounts[0];
-        setAccountId(account?.accountId);
-        setWallet(account ? await selector.wallet() : undefined);
-      };
-      void sync(selector.store.getState());
-      subscription = selector.store.observable.subscribe((state) => void sync(state));
-    });
-    return () => subscription?.unsubscribe();
-  }, []);
-
-  function record(proof: ActionProof) {
-    setProofs((current) => {
-      const next = [...current.filter((item) => item.hash !== proof.hash), proof];
-      localStorage.setItem("first100:proofs", JSON.stringify(next));
-      return next;
-    });
-  }
-  async function connect() { (await getWalletKit()).modal.show(); }
-  async function signOut() {
-    const kit = await getWalletKit();
-    const activeWallet = await kit.selector.wallet();
-    await activeWallet.signOut();
-  }
-
-  return <div className="app-shell">
-    <header>
-      <a className="brand" href="#"><span>F</span> FIRST100</a>
-      <div className="network"><i /> NEAR TESTNET</div>
-      <button className="wallet-button" onClick={() => void (accountId ? signOut() : connect())}>{accountId ?? "Connect wallet"}</button>
-    </header>
-    <main>
-      <section className="hero">
-        <div><div className="kicker">VERIFIABLE REVENUE RIGHTS FOR AUTONOMOUS APIs</div><h1>Sell your next <em>100</em> verified API sales.</h1></div>
-        <p>Fund your agent today. Keep the business. Transfer only a bounded stream of future, buyer-confirmed revenue.</p>
-      </section>
-      <nav className="tabs" aria-label="FIRST100 workflows">
-        {tabs.map((item, index) => <button key={item} className={tab === item ? "active" : ""} onClick={() => setTab(item)}><span>0{index + 1}</span>{item}</button>)}
+  return <div id="top" className="site-shell">
+    <header className="site-header">
+      <Brand />
+      <nav aria-label="Primary navigation">
+        <a href="#protocol">Protocol</a>
+        <a href="#proof">Proof</a>
+        <a href="#app">App</a>
       </nav>
-      <div className="deployment-strip"><span>Contract</span><code>{contractId}</code><span className={contractId.includes("replace") ? "unconfigured" : "configured"}>{contractId.includes("replace") ? "UNCONFIGURED" : "LIVE CONFIG"}</span></div>
-      {tab === "Seller" && <Seller wallet={wallet} accountId={accountId} record={record} />}
-      {tab === "Investor" && <Investor wallet={wallet} record={record} />}
-      {tab === "Customer" && <Customer wallet={wallet} accountId={accountId} record={record} />}
-      {tab === "Holder" && <Holder wallet={wallet} accountId={accountId} record={record} />}
-      {tab === "Proof" && <Proof sessionProofs={proofs} />}
+      <a className="header-link" href={githubUrl} target="_blank" rel="noreferrer">GitHub <Arrow /></a>
+    </header>
+
+    <main>
+      <section className="hero" aria-labelledby="hero-title">
+        <div className="hero-copy">
+          <div className="signal-line"><span /> Revenue financing for paid AI services</div>
+          <h1 id="hero-title">Finance the first <em>100</em> sales.<br />Keep everything after.</h1>
+          <p className="hero-lede">FIRST100 turns a bounded stream of buyer-confirmed API revenue into a transferable onchain right—without selling the company, the service, or the rest of its future.</p>
+          <div className="hero-actions">
+            <a className="button button-dark" href="#protocol">See how it works <span>↓</span></a>
+            <a className="text-link" href={architectureUrl} target="_blank" rel="noreferrer">Read the architecture <Arrow /></a>
+          </div>
+        </div>
+
+        <div className="term-sheet" aria-label="Illustrative FIRST100 series terms">
+          <div className="term-topline"><span>REVENUE SERIES</span><strong>01 / 100</strong></div>
+          <div className="term-title">Agent Research<br />API</div>
+          <dl>
+            <div><dt>Right</dt><dd>First 100 confirmed sales</dd></div>
+            <div><dt>Ownership</dt><dd>NEP-171 transferable NFT</dd></div>
+            <div><dt>Settlement</dt><dd>Current holder at confirmation</dd></div>
+            <div><dt>After cap</dt><dd>Revenue returns to seller</dd></div>
+          </dl>
+          <div className="term-footer"><span>ILLUSTRATIVE TERMS</span><span>NOT AN ACTIVE OFFER</span></div>
+        </div>
+      </section>
+
+      <div className="principle-strip" aria-label="Protocol principles">
+        <span>BOUNDED RIGHTS</span><i />
+        <span>VERIFIED PAYMENT</span><i />
+        <span>BUYER CONFIRMATION</span><i />
+        <span>TRANSFERABLE OWNERSHIP</span>
+      </div>
+
+      <section id="protocol" className="protocol-section section-pad">
+        <div className="section-intro">
+          <p className="section-index">01 — THE PROTOCOL</p>
+          <h2>A financing primitive with a clear edge.</h2>
+          <p>Not equity. Not a loan. Not a claim on every future dollar. FIRST100 isolates one finite entitlement and lets the contract enforce where each confirmed sale goes.</p>
+        </div>
+
+        <div className="steps">
+          <article>
+            <span className="step-number">01</span>
+            <div><h3>Set the boundary</h3><p>The seller defines the exact advance, unit price, expiration, and number of eligible sales.</p></div>
+          </article>
+          <article>
+            <span className="step-number">02</span>
+            <div><h3>Fund the series</h3><p>One investor sends the exact advance. The seller receives credit and the investor receives the revenue-right NFT.</p></div>
+          </article>
+          <article>
+            <span className="step-number">03</span>
+            <div><h3>Earn on confirmation</h3><p>Customers pay onchain, receive the service output, and confirm delivery before revenue can settle.</p></div>
+          </article>
+          <article>
+            <span className="step-number">04</span>
+            <div><h3>Transfer only the future</h3><p>The NFT routes later settlements to its new owner. Prior credit never moves with it.</p></div>
+          </article>
+        </div>
+      </section>
+
+      <section className="boundary-section">
+        <div className="boundary-copy">
+          <p className="section-index">02 — THE BOUNDARY</p>
+          <h2>One asset.<br />Nothing hidden inside it.</h2>
+          <p>The contract makes the entitlement legible: who funded it, who owns it now, how many eligible settlements remain, and what happens when the cap is reached.</p>
+          <a className="text-link light" href={architectureUrl} target="_blank" rel="noreferrer">Inspect the protocol design <Arrow /></a>
+        </div>
+        <div className="boundary-ledger">
+          <div className="ledger-head"><span>RIGHT: FIRST-100</span><span>ONCHAIN</span></div>
+          <div className="ledger-row"><span>Company equity</span><strong>NOT INCLUDED</strong></div>
+          <div className="ledger-row"><span>Service ownership</span><strong>NOT INCLUDED</strong></div>
+          <div className="ledger-row"><span>Prior accrual</span><strong>STAYS PUT</strong></div>
+          <div className="ledger-row active"><span>Future confirmed sales</span><strong>FOLLOWS NFT</strong></div>
+          <div className="ledger-row"><span>Revenue after cap</span><strong>RETURNS TO SELLER</strong></div>
+          <div className="ledger-total"><span>Entitlement</span><strong>FINITE</strong></div>
+        </div>
+      </section>
+
+      <section id="proof" className="proof-section section-pad">
+        <div className="proof-heading">
+          <p className="section-index">03 — PROOF, NOT PROMISES</p>
+          <h2>Built to be checked.</h2>
+          <p>The interface is not the source of truth. Every material claim resolves to contract state, structured events, or a finalized transaction.</p>
+        </div>
+        <div className="proof-grid">
+          <article><span>01</span><h3>Finalized payment</h3><p>The gateway verifies signer, receiver, method, and returned order ID before execution.</p></article>
+          <article><span>02</span><h3>Committed output</h3><p>Canonical request and response hashes bind payment, execution, and buyer confirmation.</p></article>
+          <article><span>03</span><h3>Replayable ledger</h3><p>Independent tooling rebuilds terminal events and reconciles them with onchain audit totals.</p></article>
+        </div>
+        <div className="proof-bar">
+          <div><span className="proof-dot" /> LOCAL VERIFICATION</div>
+          <div><strong>50</strong><span>automated tests</span></div>
+          <div><strong>6</strong><span>sandbox accounts</span></div>
+          <div><strong>0</strong><span>fabricated testnet claims</span></div>
+          <a href={githubUrl} target="_blank" rel="noreferrer">Review source <Arrow /></a>
+        </div>
+      </section>
+
+      <section id="app" className="app-preview section-pad">
+        <div className="app-copy">
+          <p className="section-index">04 — THE APP</p>
+          <div className="coming-pill"><span /> COMING SOON</div>
+          <h2>The protocol dashboard is being prepared.</h2>
+          <p>The contract, gateway, SDK, and verification flows are implemented. The public dashboard will open after testnet deployment and evidence collection.</p>
+          <p className="fine-print">No wallet connection is active on this landing page.</p>
+        </div>
+        <div className="dashboard-shell" aria-label="Dashboard preview, coming soon">
+          <div className="dashboard-top"><Brand /><span>TESTNET / PREVIEW</span></div>
+          <div className="dashboard-tabs"><span>SELLER</span><span>INVESTOR</span><span>CUSTOMER</span><span>HOLDER</span><span>PROOF</span></div>
+          <div className="dashboard-body">
+            <div className="preview-main">
+              <span className="preview-label">SERIES OVERVIEW</span>
+              <div className="preview-line wide" /><div className="preview-line medium" />
+              <div className="preview-chart"><i /><i /><i /><i /><i /><i /><i /><i /></div>
+            </div>
+            <div className="preview-side">
+              <span className="preview-label">SETTLEMENT</span>
+              <div className="preview-stat">—<small>CONFIRMED SALES</small></div>
+              <div className="preview-stat">—<small>HOLDER CREDIT</small></div>
+            </div>
+          </div>
+          <div className="dashboard-lock"><span>PUBLIC APP</span><strong>COMING SOON</strong></div>
+        </div>
+      </section>
+
+      <section className="closing-section">
+        <div><p className="section-index">OPEN PROTOCOL / TESTNET P0</p><h2>Fund the work.<br />Keep the future.</h2></div>
+        <div className="closing-actions">
+          <a className="button button-violet" href={githubUrl} target="_blank" rel="noreferrer">View repository <Arrow /></a>
+          <a className="text-link" href={architectureUrl} target="_blank" rel="noreferrer">Architecture <Arrow /></a>
+        </div>
+      </section>
     </main>
-    <footer><span>FIRST100 · protocol prototype</span><span>No guaranteed return · Testnet only · Audit required before production</span></footer>
+
+    <footer className="site-footer">
+      <Brand />
+      <p>Verifiable revenue rights for paid AI services.</p>
+      <div><span>NEAR / TESTNET P0</span><span>© 2026 FIRST100</span></div>
+    </footer>
   </div>;
 }
