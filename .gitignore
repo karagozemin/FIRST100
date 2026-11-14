@@ -11,3 +11,4 @@ app/.vite/
 *.tsbuildinfo
 playwright-report/
 test-results/
+.vercel
