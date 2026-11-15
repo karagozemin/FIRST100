@@ -6,7 +6,7 @@ import { actionCreators } from "@near-js/transactions";
 
 export const networkId = import.meta.env.VITE_NEAR_NETWORK_ID ?? "testnet";
 export const contractId = import.meta.env.VITE_CONTRACT_ID ?? "first100-v2-20261115.testnet";
-export const gatewayUrl = import.meta.env.VITE_GATEWAY_URL ?? "http://localhost:8787";
+export const gatewayUrl = import.meta.env.VITE_GATEWAY_URL ?? (import.meta.env.DEV ? "http://localhost:8787" : "/api");
 export const rpcUrl = networkId === "mainnet" ? "https://rpc.mainnet.near.org" : "https://rpc.testnet.near.org";
 export const explorerBase = networkId === "mainnet" ? "https://nearblocks.io" : "https://testnet.nearblocks.io";
 export const rpc = new First100Rpc({ contractId, rpcUrls: [rpcUrl] });

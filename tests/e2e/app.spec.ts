@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("renders the submission landing page and keeps the app in coming-soon state", async ({ page }) => {
+test("renders the product landing and opens the live application", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("heading", { name: /Finance the first 100 sales/i })).toBeVisible();
   await expect(page.getByText("NOT AN ACTIVE OFFER", { exact: true })).toBeVisible();
@@ -10,8 +10,12 @@ test("renders the submission landing page and keeps the app in coming-soon state
     "href",
     "https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet",
   );
-  await page.getByRole("link", { name: "App" }).click();
-  await expect(page.getByRole("heading", { name: /dashboard is being prepared/i })).toBeVisible();
-  await expect(page.getByText("COMING SOON", { exact: true })).toHaveCount(2);
-  await expect(page.getByText(/No wallet connection is active/)).toBeVisible();
+  await expect(page.getByText("LIVE ON TESTNET", { exact: true })).toBeVisible();
+  await expect(page.locator(".dashboard-lock")).toHaveCount(0);
+  await page.getByRole("link", { name: "App", exact: true }).click();
+  await expect(page).toHaveURL(/\/app$/);
+  await expect(page.getByRole("heading", { name: /Operate the revenue right/i })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Connect wallet" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "FIRST100 workflows" })).toBeVisible();
+  await expect(page.getByText("first100-v2-20261115.testnet", { exact: true })).toBeVisible();
 });

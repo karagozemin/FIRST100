@@ -8,9 +8,9 @@
 
 FIRST100 lets an AI service finance a bounded set of future sales without selling the company, API ownership, or all future revenue. A seller lists the first `N` eligible sales, an investor funds the series and receives a NEP-171 revenue-right NFT, and each buyer-confirmed sale is routed by the contract to the NFT owner at settlement time.
 
-The repository contains the protocol core defined by PRD v2.1: the NEAR contract, authenticated service gateway, SDK, dormant role screens, public submission landing, sandbox integration tests, evidence verifier, and deployment tooling.
+The repository contains the product defined by PRD v3.0: the NEAR contract, hosted authenticated service gateway, SDK, live role-based application, sandbox integration tests, evidence verifier, and deployment tooling.
 
-> **Current status:** local builds, automated tests, public testnet deployment, and finalized explorer evidence are complete. The interactive dashboard, hosted gateway, and independent security audit are not yet complete. The repository never substitutes placeholders for those claims.
+> **Current status:** the interactive application, public testnet contract, hosted gateway, automated test suite, and finalized explorer evidence are live. An independent security audit and legal review remain required before mainnet or real-value use.
 
 ## Why FIRST100
 
@@ -79,18 +79,17 @@ Supporting documents:
 - [Threat model](docs/THREAT_MODEL.md)
 - [Known limitations](docs/KNOWN_LIMITATIONS.md)
 - [90-second demo script](docs/DEMO_SCRIPT.md)
-- [Hackathon submission draft](HACKATHON_SUBMISSION.md)
 
 ## Repository structure
 
 | Path | Responsibility |
 | --- | --- |
 | `contracts/revenue-rights` | Rust contract, accounting state machine, events, and NEP-171 implementation |
-| `gateway` | Payment and wallet verification, service execution, response commitment, and durable local records |
+| `gateway` | Payment and wallet verification, service execution, response commitment, local persistence, and serverless challenge support |
 | `sdk` | RPC helpers, canonical hashing, amount conversion, and independent ledger replay |
-| `app` | Public landing plus dormant seller, investor, customer, holder, and auditor screens |
+| `app` | Public landing plus live seller, investor, customer, holder, and auditor workflows |
 | `tests/workspaces` | Optimized WASM tests against NEAR sandbox with six accounts |
-| `tests/e2e` | Browser-level coverage for the public landing and honest dashboard release state |
+| `tests/e2e` | Browser-level coverage for the public landing and live application route |
 | `artifacts` | Optimized contract WASM and its SHA-256 checksum |
 | `evidence` | Finalized testnet transaction manifest, service receipts, and refund proof |
 | `scripts` | Reproducible contract build, sandbox test, and testnet deployment commands |
@@ -132,7 +131,7 @@ Default local endpoints:
 ## Build and test
 
 ```bash
-npm test                    # 31 contract + 8 gateway + 6 SDK tests
+npm test                    # 31 contract + 10 gateway + 6 SDK tests
 npm run build               # gateway, web application, and SDK production builds
 npm run build:contract      # optimized WASM and checksum
 npm run test:workspaces     # 5 end-to-end protocol tests on NEAR sandbox
@@ -182,7 +181,7 @@ Financial values are decimal yoctoNEAR strings in JSON. Nanosecond timestamps ar
 | --- | --- |
 | `GET /health` | Runtime, network, contract, and trust-boundary status |
 | `GET /services/:serviceId/quote` | Finalized active-series terms from the contract |
-| `POST /orders/:orderId/challenge` | Short-lived, single-use wallet authorization challenge |
+| `POST /orders/:orderId/challenge` | Short-lived wallet authorization challenge bound to buyer and order |
 | `POST /orders/:orderId/execute` | Authenticated payment verification and service execution |
 | `GET /orders/:orderId/status` | Onchain order state plus local execution record |
 
@@ -190,7 +189,7 @@ The gateway currently runs a deterministic NEAR account research service. It ret
 
 ## Evidence and verification
 
-The public P0 contract is deployed at [`first100-v2-20261115.testnet`](https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet). Its evidence manifest records 19 finalized transactions spanning deployment, funding, two paid service executions, transfer-aware settlement, timeout refund, and completed withdrawals.
+The public contract is deployed at [`first100-v2-20261115.testnet`](https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet). Its evidence manifest records 19 finalized transactions spanning deployment, funding, two paid service executions, transfer-aware settlement, timeout refund, and completed withdrawals.
 
 The evidence verifier is designed to fail closed. It rejects an undeployed manifest, a missing contract ID, placeholder hashes, failed transactions, wrong receivers, missing terminal events, cap violations, duplicate terminal outcomes, and totals that do not reconcile with `audit_totals`.
 
@@ -216,11 +215,11 @@ The checked-in deployment is evidence, not a production endorsement. Use a separ
 
 ## Security and limitations
 
-This is testnet-oriented P0 software, not audited production financial infrastructure. In particular:
+This is testnet software, not audited production financial infrastructure. In particular:
 
 - FIRST100 cannot prevent a seller from routing equivalent economic activity outside the protocol.
-- Customer confirmation is a declared trust boundary; P0 has no quality oracle or arbitration.
-- The gateway JSON store is suitable for a single process, not a multi-instance production cluster.
+- Customer confirmation is a declared trust boundary; the current release has no quality oracle or arbitration.
+- Local gateway mode uses an atomic JSON store. The hosted serverless mode uses signed stateless challenges and onchain delivery state; durable multi-region execution leases are planned.
 - Legal classification, taxation, and securities compliance are outside the implementation.
 
 Read the full [threat model](docs/THREAT_MODEL.md) and [known limitations](docs/KNOWN_LIMITATIONS.md) before deployment.

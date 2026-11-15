@@ -6,7 +6,7 @@ import { Button, Field, Notice, Stat } from "../ui";
 import type { ActionProof, Series, Token } from "../types";
 
 export function Holder({ wallet, accountId, record }: { wallet: Wallet | undefined; accountId: string | undefined; record: (proof: ActionProof) => void }) {
-  const [seriesId, setSeriesId] = useState("first-100");
+  const [seriesId, setSeriesId] = useState("first100-live-001");
   const [receiver, setReceiver] = useState("");
   const [series, setSeries] = useState<Series>();
   const [token, setToken] = useState<Token>();

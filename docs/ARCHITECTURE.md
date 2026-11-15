@@ -1,6 +1,6 @@
 # FIRST100 architecture
 
-This document describes the implemented P0 architecture, its accounting model, trust boundaries, and failure behavior. It deliberately separates properties enforced by the contract from assumptions that remain outside the protocol.
+This document describes the implemented architecture, its accounting model, trust boundaries, and failure behavior. It deliberately separates properties enforced by the contract from assumptions that remain outside the protocol.
 
 ## Design goals
 
@@ -27,7 +27,7 @@ flowchart TB
     subgraph Offchain
         App[React application]
         Gateway[Authenticated gateway]
-        Store[Atomic JSON execution store]
+        Store[Local atomic store / signed serverless challenges]
         Service[NEAR account research service]
         SDK[SDK and ledger verifier]
     end
@@ -272,9 +272,9 @@ The verification fails if the manifest is undeployed, contains placeholders, poi
 
 ## Deployment topology
 
-P0 uses one static web application, one gateway process, one persistent local JSON store, multiple finalized RPC endpoints, and one deployed NEAR contract.
+The public topology uses one static web application, a serverless gateway with a method-restricted NEAR access key, signed short-lived challenges, multiple finalized RPC endpoints, and one deployed NEAR contract. Local development uses the same gateway with a persistent atomic JSON store.
 
-The JSON store serializes mutations and uses atomic file replacement, which is appropriate for a single gateway process. A production multi-instance topology should replace it with a transactional database that provides a unique constraint on `order_id`, an execution lease, durable pending states, and explicit recovery after a process crash between service execution and delivery submission.
+The JSON store serializes mutations and uses atomic file replacement, which is appropriate for a single local process. The serverless store makes the 32-byte NEP-413 nonce self-authenticating by binding expiry, order, buyer, and entropy with HMAC. Onchain order state prevents a second delivery transition. A mainnet multi-instance topology still requires a transactional database with a unique constraint on `order_id`, an execution lease, durable pending states, and explicit recovery after a process crash between service execution and delivery submission.
 
 ## Repository map
 

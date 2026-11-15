@@ -3,22 +3,25 @@ import type { Wallet } from "@near-wallet-selector/core";
 import { sha256, yoctoToNear } from "@first100/sdk";
 import { callMethod, contractId, gatewayUrl, rpc, successValue, transactionHash } from "../near";
 import { Button, Field, Notice } from "../ui";
-import type { ActionProof, Series } from "../types";
+import type { ActionProof, Order, Series } from "../types";
 
 type SignedMessage = { accountId: string; publicKey: string; signature: string };
 
 export function Customer({ wallet, accountId, record }: { wallet: Wallet | undefined; accountId: string | undefined; record: (proof: ActionProof) => void }) {
-  const [seriesId, setSeriesId] = useState("first-100");
-  const [target, setTarget] = useState("near.testnet");
+  const [seriesId, setSeriesId] = useState("first100-live-001");
+  const [target, setTarget] = useState("first100-v2-20261115.testnet");
   const [series, setSeries] = useState<Series>();
   const [orderId, setOrderId] = useState("");
   const [responseHash, setResponseHash] = useState("");
   const [paymentHash, setPaymentHash] = useState("");
   const [output, setOutput] = useState<unknown>();
+  const [order, setOrder] = useState<Order>();
   const [message, setMessage] = useState("");
 
   async function quote() {
-    setSeries((await rpc.view<Series | null>("get_series", { series_id: seriesId })) ?? undefined);
+    const found = (await rpc.view<Series | null>("get_series", { series_id: seriesId })) ?? undefined;
+    setSeries(found);
+    setMessage(found ? "Finalized series terms loaded." : "Series not found on finalized chain state.");
   }
   async function pay() {
     if (!wallet || !accountId || !series) return;
@@ -36,6 +39,7 @@ export function Customer({ wallet, accountId, record }: { wallet: Wallet | undef
       setPaymentHash(txHash);
       record({ label: "create_order", hash: txHash });
       setMessage("Payment finalized. Sign a one-time NEP-413 challenge to unlock execution.");
+      await loadOrder(id);
     } catch (error) { setMessage(String(error)); }
   }
   async function execute() {
@@ -81,6 +85,23 @@ export function Customer({ wallet, accountId, record }: { wallet: Wallet | undef
     const hash = transactionHash(outcome);
     if (hash) record({ label: "confirm_delivery", hash });
     setMessage("Delivery confirmed; revenue accrued to the NFT owner at this settlement moment.");
+    await loadOrder(orderId);
+  }
+  async function loadOrder(id = orderId) {
+    if (!id) return;
+    const found = await rpc.view<Order | null>("get_order", { order_id: id });
+    setOrder(found ?? undefined);
+    if (!found) setMessage("Order not found on finalized chain state.");
+  }
+  async function refund() {
+    if (!wallet || !orderId) return;
+    try {
+      const outcome = await callMethod(wallet, "claim_refund", { order_id: orderId });
+      const hash = transactionHash(outcome);
+      if (hash) record({ label: "claim_refund", hash });
+      setMessage("Refund finalized as withdrawable buyer credit.");
+      await loadOrder(orderId);
+    } catch (error) { setMessage(String(error)); }
   }
 
   return <section className="screen-grid customer">
@@ -93,13 +114,18 @@ export function Customer({ wallet, accountId, record }: { wallet: Wallet | undef
         <Field label="NEAR account to research" value={target} onChange={setTarget} />
       </div>
       <div className="button-row"><Button onClick={quote} secondary>Get quote</Button><Button onClick={pay} disabled={!wallet || !series}>Pay {series ? `${yoctoToNear(series.unit_price_yocto, 2)} Ⓝ` : "onchain"}</Button></div>
-      {orderId && <code className="order-id">Order · {orderId}</code>}
+      {orderId && <code className="order-id">Order · {orderId}{order ? ` · ${order.status}` : ""}</code>}
       {message && <p className="result-line">{message}</p>}
     </div>
     <div className="panel output-panel">
       {!output ? <div className="empty-state"><span className="pulse" />Payment-gated account research appears here.</div> : <pre>{JSON.stringify(output, null, 2)}</pre>}
-      <div className="button-row"><Button onClick={execute} disabled={!orderId || Boolean(output)}>Run paid API</Button><Button onClick={confirm} disabled={!responseHash}>Confirm delivery</Button></div>
-      <Notice>Refund becomes available only after the contract deadline. Buyer acknowledgement is a declared trust boundary.</Notice>
+      <div className="button-row">
+        <Button onClick={execute} disabled={!orderId || Boolean(output)}>Run paid API</Button>
+        <Button onClick={confirm} disabled={!responseHash}>Confirm delivery</Button>
+        <Button onClick={() => loadOrder()} disabled={!orderId} secondary>Refresh order</Button>
+        <Button onClick={refund} disabled={!orderId || order?.status === "SETTLED" || order?.status === "REFUNDED"} secondary>Claim timed-out refund</Button>
+      </div>
+      <Notice>Refund becomes available only after the onchain confirmation deadline. Buyer acknowledgement remains an explicit trust boundary.</Notice>
     </div>
   </section>;
 }

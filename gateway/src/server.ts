@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createServer, type IncomingMessage, type RequestListener, type ServerResponse } from "node:http";
 import { sha256 } from "./hash.js";
 import type { GatewayStore } from "./store.js";
 import type { ChainOrder, ResearchRequest, ResearchResult } from "./types.js";
@@ -56,10 +56,10 @@ function assertString(value: unknown, field: string): string {
   return value;
 }
 
-export function createGatewayServer(dependencies: GatewayDependencies) {
+export function createGatewayHandler(dependencies: GatewayDependencies): RequestListener {
   const now = dependencies.now ?? Date.now;
 
-  return createServer(async (request, response) => {
+  return async (request, response) => {
     try {
       if (request.method === "OPTIONS") return send(response, 204, {});
       const url = new URL(request.url ?? "/", "http://gateway.local");
@@ -90,8 +90,13 @@ export function createGatewayServer(dependencies: GatewayDependencies) {
         const order = await dependencies.chain.getOrder(orderId);
         if (!order || order.buyer !== buyer) return send(response, 403, { error: "buyer/order mismatch" });
         if (order.status !== "PAID_PENDING") return send(response, 409, { error: "order is not executable" });
-        const value = randomBytes(32).toString("base64");
-        await dependencies.store.putChallenge({ orderId, buyer, value, expiresAt: now() + 300_000 });
+        const expiresAt = now() + 300_000;
+        const value = dependencies.store.issueChallenge
+          ? await dependencies.store.issueChallenge(orderId, buyer, expiresAt)
+          : randomBytes(32).toString("base64");
+        if (!dependencies.store.issueChallenge) {
+          await dependencies.store.putChallenge({ orderId, buyer, value, expiresAt });
+        }
         return send(response, 200, {
           challenge: value,
           message: `Authorize FIRST100 execution for order ${orderId}`,
@@ -171,5 +176,9 @@ export function createGatewayServer(dependencies: GatewayDependencies) {
       const message = error instanceof Error ? error.message : "unexpected error";
       return send(response, message.includes("required") || message.includes("invalid") ? 400 : 502, { error: message });
     }
-  });
+  };
+}
+
+export function createGatewayServer(dependencies: GatewayDependencies) {
+  return createServer(createGatewayHandler(dependencies));
 }

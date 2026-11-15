@@ -19,6 +19,7 @@
     "deploy:testnet": "bash scripts/deploy-testnet.sh",
     "dev:gateway": "npm run dev -w gateway",
     "dev:app": "npm run dev -w app",
+    "configure:gateway": "node scripts/configure-vercel-gateway.mjs",
     "verify:ledger": "npm run verify:ledger -w sdk"
   },
   "engines": {

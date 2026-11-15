@@ -22,7 +22,10 @@ export interface Order {
   id: string;
   series_id: string;
   buyer: string;
+  request_hash: string;
   response_hash?: string;
+  amount_yocto: string;
+  confirm_deadline_ns: string;
   status: string;
 }
 

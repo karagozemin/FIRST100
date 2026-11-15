@@ -3,5 +3,8 @@
   "framework": "vite",
   "installCommand": "npm install",
   "buildCommand": "npm run build:vercel",
-  "outputDirectory": "app/dist"
+  "outputDirectory": "app/dist",
+  "rewrites": [
+    { "source": "/app", "destination": "/index.html" }
+  ]
 }

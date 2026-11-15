@@ -6,7 +6,7 @@ import { Button, Field, Notice, Stat } from "../ui";
 import type { ActionProof, Series } from "../types";
 
 export function Investor({ wallet, record }: { wallet: Wallet | undefined; record: (proof: ActionProof) => void }) {
-  const [seriesId, setSeriesId] = useState("first-100");
+  const [seriesId, setSeriesId] = useState("first100-live-001");
   const [series, setSeries] = useState<Series>();
   const [message, setMessage] = useState("");
 

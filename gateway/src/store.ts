@@ -1,3 +1,4 @@
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { ExecutionRecord } from "./types.js";
@@ -15,10 +16,67 @@ interface StoreData {
 }
 
 export interface GatewayStore {
+  issueChallenge?(orderId: string, buyer: string, expiresAt: number): Promise<string>;
   putChallenge(challenge: Challenge): Promise<void>;
   consumeChallenge(orderId: string, buyer: string, value: string): Promise<boolean>;
   getExecution(orderId: string): Promise<ExecutionRecord | undefined>;
   putExecution(record: ExecutionRecord): Promise<void>;
+}
+
+/**
+ * Stateless challenge storage for horizontally scaled runtimes. The 32-byte
+ * NEP-413 nonce carries an expiry, entropy, and an HMAC bound to order + buyer.
+ * Onchain order state remains the execution lock and accounting authority.
+ */
+export class SignedChallengeStore implements GatewayStore {
+  constructor(private readonly secret: string) {
+    if (secret.length < 32) throw new Error("challenge secret must be at least 32 characters");
+  }
+
+  async issueChallenge(orderId: string, buyer: string, expiresAt: number): Promise<string> {
+    const expiry = Buffer.alloc(8);
+    expiry.writeBigUInt64BE(BigInt(expiresAt));
+    const entropy = randomBytes(16);
+    const payload = Buffer.concat([expiry, entropy]);
+    const mac = this.mac(orderId, buyer, payload).subarray(0, 8);
+    return Buffer.concat([payload, mac]).toString("base64");
+  }
+
+  async putChallenge(): Promise<void> {
+    // issueChallenge returns a self-authenticating nonce, so no write is needed.
+  }
+
+  async consumeChallenge(orderId: string, buyer: string, value: string): Promise<boolean> {
+    try {
+      const token = Buffer.from(value, "base64");
+      if (token.length !== 32) return false;
+      const payload = token.subarray(0, 24);
+      const received = token.subarray(24);
+      const expected = this.mac(orderId, buyer, payload).subarray(0, 8);
+      const expiresAt = Number(payload.readBigUInt64BE(0));
+      return expiresAt >= Date.now() && timingSafeEqual(received, expected);
+    } catch {
+      return false;
+    }
+  }
+
+  async getExecution(): Promise<ExecutionRecord | undefined> {
+    return undefined;
+  }
+
+  async putExecution(): Promise<void> {
+    // The delivery transition on NEAR is the durable single-execution boundary.
+  }
+
+  private mac(orderId: string, buyer: string, payload: Buffer): Buffer {
+    return createHmac("sha256", this.secret)
+      .update(orderId)
+      .update("\0")
+      .update(buyer)
+      .update("\0")
+      .update(payload)
+      .digest();
+  }
 }
 
 export class JsonGatewayStore implements GatewayStore {

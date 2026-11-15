@@ -6,13 +6,13 @@ import { Button, Field, Notice } from "../ui";
 import type { ActionProof } from "../types";
 
 export function Seller({ wallet, accountId, record }: { wallet: Wallet | undefined; accountId: string | undefined; record: (proof: ActionProof) => void }) {
-  const [serviceId, setServiceId] = useState("agent-research");
-  const [gateway, setGateway] = useState("");
-  const [endpoint, setEndpoint] = useState("http://localhost:8787");
-  const [seriesId, setSeriesId] = useState("first-100");
+  const [serviceId, setServiceId] = useState("research-api");
+  const [gateway, setGateway] = useState("gateway.first100-v2-20261115.testnet");
+  const [endpoint, setEndpoint] = useState("https://first100-liard.vercel.app/api");
+  const [seriesId, setSeriesId] = useState("first100-series-002");
   const [cap, setCap] = useState("100");
-  const [unit, setUnit] = useState("0.1");
-  const [advance, setAdvance] = useState("8.5");
+  const [unit, setUnit] = useState("0.01");
+  const [advance, setAdvance] = useState("0.85");
   const [days, setDays] = useState("30");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");

@@ -1,4 +1,5 @@
 import logo from "../../first100-logo.png";
+import ProductApp from "./ProductApp";
 
 const githubUrl = "https://github.com/karagozemin/FIRST100";
 const architectureUrl = `${githubUrl}/blob/main/docs/ARCHITECTURE.md`;
@@ -16,13 +17,15 @@ function Brand() {
 }
 
 export default function App() {
+  if (window.location.pathname.replace(/\/$/, "") === "/app") return <ProductApp />;
+
   return <div id="top" className="site-shell">
     <header className="site-header">
       <Brand />
       <nav aria-label="Primary navigation">
         <a href="#protocol">Protocol</a>
         <a href="#proof">Proof</a>
-        <a href="#app">App</a>
+        <a href="/app">App</a>
       </nav>
       <a className="header-link" href={githubUrl} target="_blank" rel="noreferrer">GitHub <Arrow /></a>
     </header>
@@ -34,7 +37,7 @@ export default function App() {
           <h1 id="hero-title">Finance the first <em>100</em> sales.<br />Keep everything after.</h1>
           <p className="hero-lede">FIRST100 turns a bounded stream of buyer-confirmed API revenue into a transferable onchain right—without selling the company, the service, or the rest of its future.</p>
           <div className="hero-actions">
-            <a className="button button-dark" href="#protocol">See how it works <span>↓</span></a>
+            <a className="button button-dark" href="/app">Launch app <Arrow /></a>
             <a className="text-link" href={architectureUrl} target="_blank" rel="noreferrer">Read the architecture <Arrow /></a>
           </div>
         </div>
@@ -117,7 +120,7 @@ export default function App() {
         </div>
         <div className="proof-bar">
           <div><span className="proof-dot" /> LIVE TESTNET EVIDENCE</div>
-          <div><strong>51</strong><span>automated tests</span></div>
+          <div><strong>53</strong><span>automated tests</span></div>
           <div><strong>6</strong><span>sandbox accounts</span></div>
           <div><strong>0</strong><span>fabricated testnet claims</span></div>
           <a href={contractUrl} target="_blank" rel="noreferrer">Open contract <Arrow /></a>
@@ -127,34 +130,35 @@ export default function App() {
       <section id="app" className="app-preview section-pad">
         <div className="app-copy">
           <p className="section-index">04 — THE APP</p>
-          <div className="coming-pill"><span /> COMING SOON</div>
-          <h2>The protocol dashboard is being prepared.</h2>
-          <p>The contract is live on NEAR testnet with finalized funding, service, transfer, settlement, and withdrawal evidence. The public dashboard is the next release.</p>
-          <p className="fine-print">No wallet connection is active on this landing page.</p>
+          <div className="coming-pill"><span /> LIVE ON TESTNET</div>
+          <h2>Use the protocol, end to end.</h2>
+          <p>Connect a NEAR testnet wallet to list a service, fund a revenue series, purchase a paid API call, transfer the revenue right, withdraw credit, and inspect finalized proof.</p>
+          <a className="button button-dark app-launch" href="/app">Open the app <Arrow /></a>
         </div>
-        <div className="dashboard-shell" aria-label="Dashboard preview, coming soon">
-          <div className="dashboard-top"><Brand /><span>TESTNET / PREVIEW</span></div>
+        <div className="dashboard-shell dashboard-live" aria-label="FIRST100 application overview">
+          <div className="dashboard-top"><Brand /><span>TESTNET / LIVE</span></div>
           <div className="dashboard-tabs"><span>SELLER</span><span>INVESTOR</span><span>CUSTOMER</span><span>HOLDER</span><span>PROOF</span></div>
           <div className="dashboard-body">
             <div className="preview-main">
-              <span className="preview-label">SERIES OVERVIEW</span>
-              <div className="preview-line wide" /><div className="preview-line medium" />
+              <span className="preview-label">FIRST100-LIVE-001</span>
+              <div className="dashboard-value">2 / 100</div>
+              <div className="dashboard-caption">CONFIRMED REVENUE RIGHT</div>
               <div className="preview-chart"><i /><i /><i /><i /><i /><i /><i /><i /></div>
             </div>
             <div className="preview-side">
               <span className="preview-label">SETTLEMENT</span>
-              <div className="preview-stat">—<small>CONFIRMED SALES</small></div>
-              <div className="preview-stat">—<small>HOLDER CREDIT</small></div>
+              <div className="preview-stat">2<small>CONFIRMED SALES</small></div>
+              <div className="preview-stat live-state">SOLVENT<small>ONCHAIN ACCOUNTING</small></div>
             </div>
           </div>
-          <div className="dashboard-lock"><span>PUBLIC APP</span><strong>COMING SOON</strong></div>
+          <a className="dashboard-open" href="/app">OPEN APPLICATION <Arrow /></a>
         </div>
       </section>
 
       <section className="closing-section">
-        <div><p className="section-index">OPEN PROTOCOL / TESTNET P0</p><h2>Fund the work.<br />Keep the future.</h2></div>
+        <div><p className="section-index">OPEN PROTOCOL / LIVE TESTNET</p><h2>Fund the work.<br />Keep the future.</h2></div>
         <div className="closing-actions">
-          <a className="button button-violet" href={githubUrl} target="_blank" rel="noreferrer">View repository <Arrow /></a>
+          <a className="button button-violet" href="/app">Launch app <Arrow /></a>
           <a className="text-link" href={architectureUrl} target="_blank" rel="noreferrer">Architecture <Arrow /></a>
         </div>
       </section>
@@ -163,7 +167,7 @@ export default function App() {
     <footer className="site-footer">
       <Brand />
       <p>Verifiable revenue rights for paid AI services.</p>
-      <div><span>NEAR / TESTNET P0</span><span>© 2026 FIRST100</span></div>
+      <div><span>NEAR / TESTNET</span><span>© 2026 FIRST100</span></div>
     </footer>
   </div>;
 }
