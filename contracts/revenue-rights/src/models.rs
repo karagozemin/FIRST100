@@ -9,6 +9,15 @@ pub type OrderId = String;
 pub type TokenId = String;
 pub type WithdrawalId = u64;
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(crate = "near_sdk::serde")]
+pub struct ExecutionLease {
+    pub order_id: OrderId,
+    pub lease_id: String,
+    pub holder: AccountId,
+    pub expires_at_ns: U64,
+}
+
 #[derive(BorshSerialize, BorshStorageKey)]
 pub enum StorageKey {
     Services,

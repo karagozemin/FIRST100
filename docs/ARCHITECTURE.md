@@ -136,9 +136,11 @@ sequenceDiagram
     B->>G: NEP-413 proof, payment hash, request
     G->>R: verify active key, payment transaction, and order result
     G->>G: match canonical request hash
+    G->>C: acquire time-bounded execution lease
+    C-->>G: unique lease for this order
     G->>S: execute paid service
     S-->>G: deterministic result
-    G->>C: submit_delivery_hash(order_id, response_hash)
+    G->>C: submit_delivery_hash_leased(order_id, response_hash, lease_id)
     G-->>B: output, response hash, and delivery transaction
     B->>C: confirm_delivery(order_id, response_hash)
     C->>C: resolve beneficiary at settlement time
@@ -163,7 +165,7 @@ stateDiagram-v2
 
     state "Order" as Order {
         [*] --> PAID_PENDING: create_order
-        PAID_PENDING --> DELIVERED: submit_delivery_hash
+        PAID_PENDING --> DELIVERED: leased response commitment
         DELIVERED --> SETTLED: confirm_delivery
         PAID_PENDING --> REFUNDED: deadline and claim_refund
         DELIVERED --> REFUNDED: deadline and claim_refund
@@ -253,7 +255,7 @@ The client canonicalizes the service request and stores its SHA-256 hash in `cre
 
 ### Response commitment
 
-The gateway canonicalizes the service output, submits its SHA-256 hash through `submit_delivery_hash`, and returns both output and hash to the customer. `confirm_delivery` requires the customer to provide the exact committed hash.
+Before invoking an adapter, the gateway acquires a five-minute execution lease stored under the order onchain. A second worker cannot acquire that order until the lease is released or expires. The gateway canonicalizes the service output and submits its SHA-256 hash through `submit_delivery_hash_leased`; the contract accepts only the matching lease holder and consumes the lease atomically with the delivery transition. `confirm_delivery` requires the customer to provide the exact committed hash.
 
 A hash proves that the confirmed bytes match the committed bytes. It does not prove that the service answer is useful or correct.
 
@@ -285,6 +287,9 @@ The verification fails if the manifest is undeployed, contains placeholders, poi
 | Unauthorized delivery commitment | Transaction reverts |
 | Request body differs from onchain hash | Gateway rejects execution |
 | Payment transaction has wrong signer, receiver, method, or return value | Gateway rejects execution |
+| Another worker already holds the order lease | Gateway returns a conflict without invoking the adapter |
+| Adapter fails | Gateway releases the lease so an authenticated retry can begin immediately |
+| Worker crashes | The lease expires after five minutes and a later authenticated retry can recover |
 | Buyer does not confirm before the deadline | Buyer can claim a refund into internal credit |
 | Response hash differs during confirmation | Transaction reverts |
 | NFT resolver is pending | Settlement reverts until ownership becomes final |
@@ -296,7 +301,9 @@ The verification fails if the manifest is undeployed, contains placeholders, poi
 
 The public topology uses one static web application, a serverless gateway with a method-restricted NEAR access key, signed short-lived challenges, multiple finalized RPC endpoints, and one deployed NEAR contract. Local development uses the same gateway with a persistent atomic JSON store.
 
-The JSON store serializes mutations and uses atomic file replacement, which is appropriate for a single local process. The serverless store makes the 32-byte NEP-413 nonce self-authenticating by binding expiry, order, buyer, and entropy with HMAC. Onchain order state prevents a second delivery transition. A mainnet multi-instance topology still requires a transactional database with a unique constraint on `order_id`, an execution lease, durable pending states, and explicit recovery after a process crash between service execution and delivery submission.
+The JSON store serializes mutations and uses atomic file replacement, which is appropriate for a single local process. The serverless store makes the 32-byte NEP-413 nonce self-authenticating by binding expiry, order, buyer, and entropy with HMAC. A time-bounded onchain lease prevents parallel adapter execution across serverless instances and makes crashed work retryable without trusting an offchain lock.
+
+The included adapters are deterministic and replayable. A process crash after adapter completion but before delivery commitment can therefore repeat the read-only adapter call after lease expiry. Any future adapter with external side effects must add a durable receipt or idempotency system at that service boundary; the onchain lease alone cannot create a distributed transaction with an arbitrary external API.
 
 ## Repository map
 

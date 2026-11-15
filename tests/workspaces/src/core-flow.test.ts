@@ -58,7 +58,17 @@ async function paidAndDelivered(buyer: NearAccount, nonce: string) {
     request_hash: hash("b"),
     client_nonce: nonce,
   }, { attachedDeposit: unit });
-  await gateway.call(contract, "submit_delivery_hash", { order_id: orderId, response_hash: hash("c") });
+  const leaseId = `lease-${nonce}`;
+  await gateway.call(contract, "acquire_execution_lease", {
+    order_id: orderId,
+    lease_id: leaseId,
+    ttl_ns: "300000000000",
+  });
+  await gateway.call(contract, "submit_delivery_hash_leased", {
+    order_id: orderId,
+    response_hash: hash("c"),
+    lease_id: leaseId,
+  });
   return orderId;
 }
 

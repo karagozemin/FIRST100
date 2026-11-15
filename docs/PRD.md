@@ -100,7 +100,7 @@ remaining entitlement = N - k
 | Multi-service adapters | Typed adapter registry, schemas, metering, SDK examples | **SHIPPED** |
 | Stable settlement | Whitelisted NEP-141 assets with storage and callback safety | **PLANNED** |
 | Risk view | Scenario analysis without APY or guaranteed-return language | **SHIPPED** |
-| Durable execution | Transactional leases, unique order constraint, recovery worker | **PLANNED** |
+| Durable execution | Onchain worker lease, unique order execution, expiry-based recovery | **SHIPPED** |
 | Independent attestation | Signed service evidence from an operator-independent verifier | **PLANNED** |
 | Wallet-gated investor policy | Deterministic limits for advance, entitlement, break-even, and services; explicit wallet approval | **SHIPPED** |
 
@@ -198,9 +198,9 @@ Execution requires:
 4. a valid NEP-413 signature;
 5. a finalized `create_order` transaction with the expected signer, receiver, method, and returned order ID;
 6. a request whose canonical hash matches the onchain commitment; and
-7. a method-restricted gateway key that can call only `submit_delivery_hash`.
+7. a method-restricted gateway key that can call only execution lease and leased delivery methods.
 
-Local mode persists challenges and executions in an atomic JSON store. Hosted mode uses HMAC-signed stateless challenges and onchain delivery state. Durable multi-region execution leases remain a P1 requirement.
+Local mode persists challenges and executions in an atomic JSON store. Hosted mode uses HMAC-signed stateless challenges and time-bounded onchain execution leases. A worker must acquire the unique order lease before adapter execution; a matching, unexpired lease is required to commit delivery. Failed work releases immediately and crashed work becomes recoverable after expiry.
 
 ## 10. Product experience
 
@@ -246,8 +246,8 @@ The product may show funded advance, confirmed calls, settled revenue, remaining
 
 Current automated evidence:
 
-- 33 Rust contract unit and adversarial tests;
-- 13 gateway tests;
+- 35 Rust contract unit and adversarial tests;
+- 15 gateway tests;
 - 10 SDK, policy, and ledger replay tests;
 - 5 near-workspaces sandbox flows using six roles;
 - Chromium coverage for the landing and application route;
@@ -276,6 +276,9 @@ Secrets, private keys, fabricated hashes, and non-English repository copy are pr
 
 - Contract: https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet
 - Portfolio upgrade: https://explorer.testnet.near.org/transactions/59jfjSMMExNGKB4QP6pj6ohpL3QCg2RuoMAqbTZstL2p
+- Execution-lease upgrade: https://explorer.testnet.near.org/transactions/9u8GDokLqWpsoXCUNL3s4MW2QXZphXw7TbLR7xBTfsJn
+- Restricted gateway key: https://explorer.testnet.near.org/transactions/FeEB1dbQ1vK4Ez3LsbRs9g1CgqXELx21dEkM8QwR1cSf
+- Legacy gateway key revocation: https://explorer.testnet.near.org/transactions/3EDd9mh2pAM7V64yV1dGdGMbaMYSVJs481nBs8qCiMXM
 - Funding: https://explorer.testnet.near.org/transactions/Cvm36ephVCw6x1QPb51HiXSHkWAAgzBTvcPU3vYwte8v
 - First settlement: https://explorer.testnet.near.org/transactions/2T7cBtrycCjcNxQzVDkJVxFEoCa9Rb2wAxvqESvqt8Ek
 - NFT transfer: https://explorer.testnet.near.org/transactions/9iA3WXYeZpXdBBJhsFXTkazM1KCygg3YT4K6t6fXtCHF

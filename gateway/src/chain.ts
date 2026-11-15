@@ -110,19 +110,39 @@ export class NearChain {
     return block.header.height;
   }
 
-  async submitDeliveryHash(orderId: string, responseHash: string): Promise<string> {
+  private async gatewayCall(methodName: string, args: Record<string, unknown>): Promise<string> {
     if (!this.gatewayAccountId || !this.gatewayPrivateKey) throw new Error("gateway signer is not configured");
     const provider = new JsonRpcProvider({ url: this.rpcUrls[0]! });
     const signer = KeyPairSigner.fromSecretKey(this.gatewayPrivateKey as `ed25519:${string}`);
     const account = new Account(this.gatewayAccountId, provider, signer);
     const outcome = await account.callFunctionRaw({
       contractId: this.contractId,
-      methodName: "submit_delivery_hash",
-      args: { order_id: orderId, response_hash: responseHash },
+      methodName,
+      args,
       gas: 30_000_000_000_000n,
       deposit: 0n,
       waitUntil: "FINAL",
     });
     return outcome.transaction.hash;
+  }
+
+  acquireExecutionLease(orderId: string, leaseId: string, ttlNs: string): Promise<string> {
+    return this.gatewayCall("acquire_execution_lease", {
+      order_id: orderId,
+      lease_id: leaseId,
+      ttl_ns: ttlNs,
+    });
+  }
+
+  releaseExecutionLease(orderId: string, leaseId: string): Promise<string> {
+    return this.gatewayCall("release_execution_lease", { order_id: orderId, lease_id: leaseId });
+  }
+
+  submitDeliveryHash(orderId: string, responseHash: string, leaseId: string): Promise<string> {
+    return this.gatewayCall("submit_delivery_hash_leased", {
+      order_id: orderId,
+      response_hash: responseHash,
+      lease_id: leaseId,
+    });
   }
 }

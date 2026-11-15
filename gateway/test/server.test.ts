@@ -34,6 +34,8 @@ describe("FIRST100 gateway", () => {
       verifyAccessKey: vi.fn(async () => undefined),
       verifyWalletMessage: vi.fn(async () => undefined),
       verifyPaymentTransaction: vi.fn(async () => undefined),
+      acquireExecutionLease: vi.fn(async () => "lease-tx"),
+      releaseExecutionLease: vi.fn(async () => "release-tx"),
       submitDeliveryHash: vi.fn(async () => "delivery-tx"),
     };
     runService = vi.fn(async (_serviceId, request) => ({
@@ -139,7 +141,8 @@ describe("FIRST100 gateway", () => {
       serviceId: "research-api",
     });
     expect(chain.verifyPaymentTransaction).toHaveBeenCalledWith("payment-tx", "buyer.testnet", "order-1");
-    expect(chain.submitDeliveryHash).toHaveBeenCalledWith("order-1", result.responseHash);
+    expect(chain.acquireExecutionLease).toHaveBeenCalledWith("order-1", expect.stringMatching(/^[a-f0-9]{32}$/), "300000000000");
+    expect(chain.submitDeliveryHash).toHaveBeenCalledWith("order-1", result.responseHash, expect.stringMatching(/^[a-f0-9]{32}$/));
   });
 
   it("is idempotent across authenticated execute retries", async () => {
@@ -157,6 +160,23 @@ describe("FIRST100 gateway", () => {
     const response = await execute(body.challenge, { accountId: "mallory.testnet" });
     expect(response.status).toBe(409);
     expect(runService).not.toHaveBeenCalled();
+  });
+
+  it("rejects a parallel worker when the onchain lease is held", async () => {
+    vi.mocked(chain.acquireExecutionLease).mockRejectedValueOnce(new Error("order execution is already leased"));
+    const { body } = await issueChallenge();
+    const response = await execute(body.challenge);
+    expect(response.status).toBe(409);
+    expect(await response.json()).toEqual({ error: "order execution is already in progress" });
+    expect(runService).not.toHaveBeenCalled();
+  });
+
+  it("releases its lease when service execution fails", async () => {
+    runService.mockRejectedValueOnce(new Error("service unavailable"));
+    const { body } = await issueChallenge();
+    const response = await execute(body.challenge);
+    expect(response.status).toBe(502);
+    expect(chain.releaseExecutionLease).toHaveBeenCalledWith("order-1", expect.stringMatching(/^[a-f0-9]{32}$/));
   });
 
   it("exposes onchain and execution status without treating cache as authority", async () => {

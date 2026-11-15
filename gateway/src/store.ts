@@ -26,7 +26,8 @@ export interface GatewayStore {
 /**
  * Stateless challenge storage for horizontally scaled runtimes. The 32-byte
  * NEP-413 nonce carries an expiry, entropy, and an HMAC bound to order + buyer.
- * Onchain order state remains the execution lock and accounting authority.
+ * The onchain execution lease remains the cross-instance execution lock and
+ * the contract remains the accounting authority.
  */
 export class SignedChallengeStore implements GatewayStore {
   constructor(private readonly secret: string) {
@@ -65,7 +66,8 @@ export class SignedChallengeStore implements GatewayStore {
   }
 
   async putExecution(): Promise<void> {
-    // The delivery transition on NEAR is the durable single-execution boundary.
+    // Hosted response caching is optional; the onchain lease and delivery
+    // transition are the durable execution boundaries.
   }
 
   private mac(orderId: string, buyer: string, payload: Buffer): Buffer {

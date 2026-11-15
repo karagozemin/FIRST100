@@ -23,7 +23,7 @@ run("npx", [
   "grant-function-call-access",
   "--allowance", "0.25 NEAR",
   "--contract-account-id", contractAccount,
-  "--function-names", "submit_delivery_hash",
+  "--function-names", "acquire_execution_lease,release_execution_lease,submit_delivery_hash_leased",
   "use-manually-provided-public-key", publicKey,
   "network-config", "testnet",
   "sign-with-keychain", "send",
@@ -40,4 +40,4 @@ setVercelEnvironment("GATEWAY_ACCOUNT_ID", gatewayAccount);
 setVercelEnvironment("GATEWAY_PRIVATE_KEY", keyPair.toString());
 setVercelEnvironment("GATEWAY_CHALLENGE_SECRET", randomBytes(48).toString("base64url"));
 
-console.log(`Configured a submit_delivery_hash-only key (${publicKey}) for the production gateway.`);
+console.log(`Configured an execution-lease-only key (${publicKey}) for the production gateway.`);

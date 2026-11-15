@@ -20,7 +20,9 @@ export interface GatewayChain {
     signatureBase64: string,
   ): Promise<void>;
   verifyPaymentTransaction(txHash: string, buyer: string, orderId: string): Promise<void>;
-  submitDeliveryHash(orderId: string, responseHash: string): Promise<string>;
+  acquireExecutionLease(orderId: string, leaseId: string, ttlNs: string): Promise<string>;
+  releaseExecutionLease(orderId: string, leaseId: string): Promise<string>;
+  submitDeliveryHash(orderId: string, responseHash: string, leaseId: string): Promise<string>;
 }
 
 export interface GatewayDependencies {
@@ -151,25 +153,43 @@ export function createGatewayHandler(dependencies: GatewayDependencies): Request
 
         const series = await dependencies.chain.getSeries(order.series_id);
         if (!series) return send(response, 409, { error: "order series not found" });
-        const output = await dependencies.runService(series.service_id, serviceRequest, {
-          orderId,
-          seriesId: order.series_id,
-          serviceId: series.service_id,
-        });
-        const responseHash = sha256(output);
-        const deliveryTxHash = await dependencies.chain.submitDeliveryHash(orderId, responseHash);
-        const record = {
-          orderId,
-          buyer,
-          paymentTxHash,
-          requestHash: order.request_hash,
-          responseHash,
-          output,
-          deliveryTxHash,
-          executedAt: new Date(now()).toISOString(),
-        };
-        await dependencies.store.putExecution(record);
-        return send(response, 200, record);
+        const leaseId = randomBytes(16).toString("hex");
+        try {
+          await dependencies.chain.acquireExecutionLease(orderId, leaseId, "300000000000");
+        } catch (error) {
+          if (String(error).includes("already leased")) {
+            return send(response, 409, { error: "order execution is already in progress" });
+          }
+          throw error;
+        }
+        let leaseHeld = true;
+        try {
+          const output = await dependencies.runService(series.service_id, serviceRequest, {
+            orderId,
+            seriesId: order.series_id,
+            serviceId: series.service_id,
+          });
+          const responseHash = sha256(output);
+          const deliveryTxHash = await dependencies.chain.submitDeliveryHash(orderId, responseHash, leaseId);
+          leaseHeld = false;
+          const record = {
+            orderId,
+            buyer,
+            paymentTxHash,
+            requestHash: order.request_hash,
+            responseHash,
+            output,
+            deliveryTxHash,
+            executedAt: new Date(now()).toISOString(),
+          };
+          await dependencies.store.putExecution(record);
+          return send(response, 200, record);
+        } catch (error) {
+          if (leaseHeld) {
+            await dependencies.chain.releaseExecutionLease(orderId, leaseId).catch(() => undefined);
+          }
+          throw error;
+        }
       }
 
       const statusRoute = url.pathname.match(/^\/orders\/([^/]+)\/status$/);

@@ -19,8 +19,11 @@ const MIN_CONFIRM_TIMEOUT_NS: u64 = 60_000_000_000;
 const MAX_CONFIRM_TIMEOUT_NS: u64 = 7 * 24 * 60 * 60 * 1_000_000_000;
 const MAX_CAP: u32 = 10_000;
 const MAX_PAGE_SIZE: u32 = 100;
+const MIN_EXECUTION_LEASE_NS: u64 = 30 * 1_000_000_000;
+const MAX_EXECUTION_LEASE_NS: u64 = 10 * 60 * 1_000_000_000;
 const SERVICE_INDEX: &[u8] = b"first100:index:services:v1";
 const SERIES_INDEX: &[u8] = b"first100:index:series:v1";
+const EXECUTION_LEASE_PREFIX: &[u8] = b"first100:execution-lease:v1:";
 
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
@@ -125,7 +128,8 @@ mod tests {
     fn delivered_order(contract: &mut Contract, buyer: &str, nonce: &str, now: u64) -> String {
         let id = paid_order(contract, buyer, nonce, now);
         set_context("gateway.test.near", 0, now + 1);
-        contract.submit_delivery_hash(id.clone(), hash('c'));
+        contract.acquire_execution_lease(id.clone(), "lease-1".into(), U64(MIN_EXECUTION_LEASE_NS));
+        contract.submit_delivery_hash_leased(id.clone(), hash('c'), "lease-1".into());
         id
     }
 
@@ -269,7 +273,7 @@ mod tests {
         let mut contract = funded(100);
         let id = paid_order(&mut contract, "buyer.test.near", "n1", NOW + 2);
         set_context("attacker.test.near", 0, NOW + 3);
-        contract.submit_delivery_hash(id, hash('c'));
+        contract.acquire_execution_lease(id, "attacker-lease".into(), U64(MIN_EXECUTION_LEASE_NS));
     }
 
     #[test]
@@ -279,6 +283,42 @@ mod tests {
         let order = contract.get_order(id).unwrap();
         assert_eq!(order.status, OrderStatus::Delivered);
         assert_eq!(order.response_hash, Some(hash('c')));
+    }
+
+    #[test]
+    #[should_panic(expected = "order execution is already leased")]
+    fn execution_lease_blocks_parallel_workers() {
+        let mut contract = funded(100);
+        let id = paid_order(&mut contract, "buyer.test.near", "n1", NOW + 2);
+        set_context("gateway.test.near", 0, NOW + 3);
+        contract.acquire_execution_lease(
+            id.clone(),
+            "worker-a".into(),
+            U64(MIN_EXECUTION_LEASE_NS),
+        );
+        set_context("gateway.test.near", 0, NOW + 4);
+        contract.acquire_execution_lease(id, "worker-b".into(), U64(MIN_EXECUTION_LEASE_NS));
+    }
+
+    #[test]
+    fn expired_execution_lease_can_be_recovered() {
+        let mut contract = funded(100);
+        let id = paid_order(&mut contract, "buyer.test.near", "n1", NOW + 2);
+        set_context("gateway.test.near", 0, NOW + 3);
+        contract.acquire_execution_lease(
+            id.clone(),
+            "worker-a".into(),
+            U64(MIN_EXECUTION_LEASE_NS),
+        );
+        set_context("gateway.test.near", 0, NOW + 3 + MIN_EXECUTION_LEASE_NS + 1);
+        let recovered = contract.acquire_execution_lease(
+            id.clone(),
+            "worker-b".into(),
+            U64(MIN_EXECUTION_LEASE_NS),
+        );
+        assert_eq!(recovered.lease_id, "worker-b");
+        contract.submit_delivery_hash_leased(id.clone(), hash('c'), "worker-b".into());
+        assert!(contract.get_execution_lease(id).is_none());
     }
 
     #[test]
@@ -893,7 +933,72 @@ impl Contract {
         order_id
     }
 
-    pub fn submit_delivery_hash(&mut self, order_id: OrderId, response_hash: String) {
+    pub fn acquire_execution_lease(
+        &mut self,
+        order_id: OrderId,
+        lease_id: String,
+        ttl_ns: U64,
+    ) -> ExecutionLease {
+        Self::assert_identifier(&lease_id, "lease_id");
+        require!(
+            (MIN_EXECUTION_LEASE_NS..=MAX_EXECUTION_LEASE_NS).contains(&ttl_ns.0),
+            "execution lease TTL out of range"
+        );
+        let order = self.orders.get(&order_id).expect("order not found");
+        require!(
+            order.status == OrderStatus::PaidPending,
+            "order is not awaiting execution"
+        );
+        require!(
+            env::block_timestamp() <= order.confirm_deadline_ns,
+            "confirmation deadline passed"
+        );
+        self.assert_gateway_for_order(&order);
+
+        let caller = env::predecessor_account_id();
+        if let Some(existing) = Self::read_execution_lease(&order_id) {
+            if existing.lease_id == lease_id && existing.holder == caller {
+                return existing;
+            }
+            require!(
+                existing.expires_at_ns.0 < env::block_timestamp(),
+                "order execution is already leased"
+            );
+        }
+        let lease = ExecutionLease {
+            order_id: order_id.clone(),
+            lease_id,
+            holder: caller,
+            expires_at_ns: U64(env::block_timestamp()
+                .checked_add(ttl_ns.0)
+                .expect("execution lease expiry overflow")),
+        };
+        env::storage_write(
+            &Self::execution_lease_key(&order_id),
+            &near_sdk::serde_json::to_vec(&lease).expect("execution lease serialization failed"),
+        );
+        lease
+    }
+
+    pub fn release_execution_lease(&mut self, order_id: OrderId, lease_id: String) -> bool {
+        let order = self.orders.get(&order_id).expect("order not found");
+        self.assert_gateway_for_order(&order);
+        let Some(existing) = Self::read_execution_lease(&order_id) else {
+            return false;
+        };
+        if existing.lease_id != lease_id || existing.holder != env::predecessor_account_id() {
+            return false;
+        }
+        env::storage_remove(&Self::execution_lease_key(&order_id));
+        true
+    }
+
+    pub fn submit_delivery_hash_leased(
+        &mut self,
+        order_id: OrderId,
+        response_hash: String,
+        lease_id: String,
+    ) {
         Self::assert_hash(&response_hash, "response_hash");
         let mut order = self.orders.get(&order_id).expect("order not found");
         require!(
@@ -904,19 +1009,20 @@ impl Contract {
             env::block_timestamp() <= order.confirm_deadline_ns,
             "confirmation deadline passed"
         );
-        let series = self.series.get(&order.series_id).expect("series not found");
-        let service = self
-            .services
-            .get(&series.service_id)
-            .expect("service not found");
-        let caller = env::predecessor_account_id();
+        self.assert_gateway_for_order(&order);
+        let lease = Self::read_execution_lease(&order_id).expect("execution lease not found");
         require!(
-            caller == service.gateway || caller == service.operator,
-            "gateway or operator only"
+            lease.lease_id == lease_id && lease.holder == env::predecessor_account_id(),
+            "execution lease does not match"
+        );
+        require!(
+            lease.expires_at_ns.0 >= env::block_timestamp(),
+            "execution lease expired"
         );
         order.response_hash = Some(response_hash.clone());
         order.status = OrderStatus::Delivered;
         self.orders.insert(&order_id, &order);
+        env::storage_remove(&Self::execution_lease_key(&order_id));
         events::emit(
             "delivery_submitted",
             DeliveryEvent {
@@ -1230,6 +1336,10 @@ impl Contract {
         self.orders.get(&order_id).map(Into::into)
     }
 
+    pub fn get_execution_lease(&self, order_id: OrderId) -> Option<ExecutionLease> {
+        Self::read_execution_lease(&order_id)
+    }
+
     pub fn get_credit(&self, account_id: AccountId) -> U128 {
         U128(self.credits.get(&account_id).unwrap_or(0))
     }
@@ -1280,6 +1390,30 @@ impl Contract {
 
     pub(crate) fn token_id_for(series_id: &str) -> TokenId {
         format!("right:{series_id}")
+    }
+
+    fn execution_lease_key(order_id: &str) -> Vec<u8> {
+        let mut key = EXECUTION_LEASE_PREFIX.to_vec();
+        key.extend(env::sha256(order_id.as_bytes()));
+        key
+    }
+
+    fn read_execution_lease(order_id: &str) -> Option<ExecutionLease> {
+        env::storage_read(&Self::execution_lease_key(order_id))
+            .and_then(|value| near_sdk::serde_json::from_slice(&value).ok())
+    }
+
+    fn assert_gateway_for_order(&self, order: &ApiOrder) {
+        let series = self.series.get(&order.series_id).expect("series not found");
+        let service = self
+            .services
+            .get(&series.service_id)
+            .expect("service not found");
+        let caller = env::predecessor_account_id();
+        require!(
+            caller == service.gateway || caller == service.operator,
+            "gateway or operator only"
+        );
     }
 
     fn index_length(prefix: &[u8]) -> u64 {

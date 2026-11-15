@@ -131,7 +131,7 @@ Default local endpoints:
 ## Build and test
 
 ```bash
-npm test                    # 33 contract + 13 gateway + 10 SDK tests
+npm test                    # 35 contract + 15 gateway + 10 SDK tests
 npm run build               # gateway, web application, and SDK production builds
 npm run build:contract      # optimized WASM and checksum
 npm run test:workspaces     # 5 end-to-end protocol tests on NEAR sandbox
@@ -162,7 +162,9 @@ The committed WASM checksum is stored in [`artifacts/first100_revenue_rights.was
 | `cancel_unfunded_series` | Seller | none | Cancel a listed series before funding |
 | `fund_series` | Investor | exact advance | Credit the seller and mint the NFT |
 | `create_order` | Customer | exact unit price | Escrow payment and commit the request hash |
-| `submit_delivery_hash` | Gateway or operator | none | Commit the service response hash |
+| `acquire_execution_lease` | Gateway or operator | none | Acquire one time-bounded worker lease for an order |
+| `release_execution_lease` | Lease holder | none | Release a failed execution attempt for immediate retry |
+| `submit_delivery_hash_leased` | Lease holder | none | Commit the response hash and consume the matching lease |
 | `confirm_delivery` | Order buyer | none | Settle escrow to the current beneficiary |
 | `claim_refund` | Order buyer | none | Recover unresolved escrow after the deadline |
 | `close_expired_series` | Any account | none | Close an expired series with no open orders |
@@ -172,7 +174,7 @@ The committed WASM checksum is stored in [`artifacts/first100_revenue_rights.was
 
 ### Important views
 
-`get_service`, `get_services`, `get_series`, `get_series_page`, `get_order`, `get_credit`, `get_withdrawal`, `get_active_series`, `get_open_order_count`, `is_transfer_pending`, `audit_totals`, `nft_token`, `nft_tokens`, `nft_tokens_for_owner`, and `nft_metadata`.
+`get_service`, `get_services`, `get_series`, `get_series_page`, `get_order`, `get_execution_lease`, `get_credit`, `get_withdrawal`, `get_active_series`, `get_open_order_count`, `is_transfer_pending`, `audit_totals`, `nft_token`, `nft_tokens`, `nft_tokens_for_owner`, and `nft_metadata`.
 
 Financial values are decimal yoctoNEAR strings in JSON. Nanosecond timestamps are also strings to avoid JavaScript integer precision loss.
 
@@ -197,7 +199,7 @@ This engine is deterministic decision support, not an unattended trading agent. 
 
 ## Evidence and verification
 
-The public contract is deployed at [`first100-v2-20261115.testnet`](https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet). Its evidence manifest records 22 finalized transactions spanning deployment, portfolio upgrade, funding, two paid service executions, transfer-aware settlement, timeout refund, and completed withdrawals.
+The public contract is deployed at [`first100-v2-20261115.testnet`](https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet). Its evidence manifest records 23 finalized transactions spanning deployment, portfolio and execution-lease upgrades, funding, two paid service executions, transfer-aware settlement, timeout refund, and completed withdrawals.
 
 The evidence verifier is designed to fail closed. It rejects an undeployed manifest, a missing contract ID, placeholder hashes, failed transactions, wrong receivers, missing terminal events, cap violations, duplicate terminal outcomes, and totals that do not reconcile with `audit_totals`.
 
@@ -227,7 +229,8 @@ This is testnet software, not audited production financial infrastructure. In pa
 
 - FIRST100 cannot prevent a seller from routing equivalent economic activity outside the protocol.
 - Customer confirmation is a declared trust boundary; the current release has no quality oracle or arbitration.
-- Local gateway mode uses an atomic JSON store. The hosted serverless mode uses signed stateless challenges and onchain delivery state; durable multi-region execution leases are planned.
+- Local gateway mode uses an atomic JSON store. Hosted challenges are signed and stateless, while time-bounded onchain leases serialize multi-region execution and permit retry after worker failure.
+- There is no distributed transaction that preserves a service output across a crash immediately before its delivery commitment. The included adapters are deterministic and replayable; side-effecting adapters need their own durable receipt store.
 - Legal classification, taxation, and securities compliance are outside the implementation.
 
 Read the full [threat model](docs/THREAT_MODEL.md) and [known limitations](docs/KNOWN_LIMITATIONS.md) before deployment.

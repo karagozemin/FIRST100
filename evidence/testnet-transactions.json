@@ -12,6 +12,10 @@
       "hash": "59jfjSMMExNGKB4QP6pj6ohpL3QCg2RuoMAqbTZstL2p",
       "signerId": "first100-v2-20261115.testnet"
     },
+    "executionLeaseUpgrade": {
+      "hash": "9u8GDokLqWpsoXCUNL3s4MW2QXZphXw7TbLR7xBTfsJn",
+      "signerId": "first100-v2-20261115.testnet"
+    },
     "nftExtensions": {
       "hash": "2mgvTppZZAmht64Bwwv2pVaZSvQY7rkPT4xasR17mBiv",
       "signerId": "first100-v2-20261115.testnet"
