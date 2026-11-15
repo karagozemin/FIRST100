@@ -31,6 +31,8 @@ const gateway = createGatewayHandler({
 });
 
 export default function handler(request: IncomingMessage, response: ServerResponse) {
-  request.url = (request.url ?? "/").replace(/^\/api(?=\/|$)/, "") || "/";
+  const incoming = new URL(request.url ?? "/", "http://gateway.local");
+  const route = incoming.searchParams.get("route");
+  request.url = route ? `/${route.replace(/^\/+/, "")}` : "/";
   return gateway(request, response);
 }

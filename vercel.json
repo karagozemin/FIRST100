@@ -5,6 +5,7 @@
   "buildCommand": "npm run build:vercel",
   "outputDirectory": "app/dist",
   "rewrites": [
-    { "source": "/app", "destination": "/index.html" }
+    { "source": "/app", "destination": "/index.html" },
+    { "source": "/api/:path*", "destination": "/api/gateway?route=:path" }
   ]
 }
