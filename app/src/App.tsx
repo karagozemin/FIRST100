@@ -120,7 +120,7 @@ export default function App() {
         </div>
         <div className="proof-bar">
           <div><span className="proof-dot" /> LIVE TESTNET EVIDENCE</div>
-          <div><strong>55</strong><span>automated tests</span></div>
+          <div><strong>58</strong><span>automated tests</span></div>
           <div><strong>6</strong><span>sandbox accounts</span></div>
           <div><strong>0</strong><span>fabricated testnet claims</span></div>
           <a href={contractUrl} target="_blank" rel="noreferrer">Open contract <Arrow /></a>

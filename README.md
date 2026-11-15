@@ -131,7 +131,7 @@ Default local endpoints:
 ## Build and test
 
 ```bash
-npm test                    # 33 contract + 10 gateway + 6 SDK tests
+npm test                    # 33 contract + 13 gateway + 6 SDK tests
 npm run build               # gateway, web application, and SDK production builds
 npm run build:contract      # optimized WASM and checksum
 npm run test:workspaces     # 5 end-to-end protocol tests on NEAR sandbox
@@ -181,12 +181,13 @@ Financial values are decimal yoctoNEAR strings in JSON. Nanosecond timestamps ar
 | Route | Purpose |
 | --- | --- |
 | `GET /health` | Runtime, network, contract, and trust-boundary status |
+| `GET /services` | Typed adapter descriptors, request schemas, and metering model |
 | `GET /services/:serviceId/quote` | Finalized active-series terms from the contract |
 | `POST /orders/:orderId/challenge` | Short-lived wallet authorization challenge bound to buyer and order |
 | `POST /orders/:orderId/execute` | Authenticated payment verification and service execution |
 | `GET /orders/:orderId/status` | Onchain order state plus local execution record |
 
-The gateway currently runs a deterministic NEAR account research service. It returns finalized balance, locked balance, storage usage, code hash, account classification, and source metadata.
+The gateway selects a typed adapter from the order's finalized onchain `service_id`. The default registry includes deterministic NEAR account research and account risk signals, exposes request schemas, and fails closed for unconfigured service identifiers.
 
 ## Evidence and verification
 

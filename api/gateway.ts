@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { createDefaultServiceRegistry } from "../gateway/src/adapters.js";
 import { NearChain } from "../gateway/src/chain.js";
 import { createGatewayHandler } from "../gateway/src/server.js";
-import { researchNearAccount } from "../gateway/src/service.js";
 import { SignedChallengeStore } from "../gateway/src/store.js";
 
 function required(name: string): string {
@@ -24,10 +24,12 @@ const chain = new NearChain(
   required("GATEWAY_PRIVATE_KEY"),
 );
 const store = new SignedChallengeStore(required("GATEWAY_CHALLENGE_SECRET"));
+const services = createDefaultServiceRegistry(chain);
 const gateway = createGatewayHandler({
   chain,
   store,
-  runService: (request) => researchNearAccount(chain, request),
+  runService: (serviceId, request, context) => services.execute(serviceId, request, context),
+  listServices: () => services.list(),
 });
 
 export default function handler(request: IncomingMessage, response: ServerResponse) {

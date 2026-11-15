@@ -56,12 +56,14 @@ flowchart TB
 
 The contract owns protocol state and accounting. The gateway owns service execution and transaction verification. The application coordinates user workflows but is never an accounting authority.
 
+The gateway resolves the order's series from finalized state and selects an adapter by its onchain `service_id`. Each adapter publishes a versioned request schema and metering model. Unknown identifiers fail closed; clients cannot select a different adapter than the funded series.
+
 ## Component responsibilities
 
 | Component | Responsibilities | Explicitly not responsible for |
 | --- | --- | --- |
 | Revenue-rights contract | Series lifecycle, escrow, beneficiary selection, credits, refunds, withdrawals, NEP-171 ownership, events, audit totals | Service output quality, off-protocol revenue, legal classification |
-| Gateway | Wallet proof, finalized payment verification, request commitment matching, service execution, response commitment, execution records | Final accounting, buyer acceptance, NFT ownership decisions |
+| Gateway | Wallet proof, finalized payment verification, request commitment matching, typed adapter selection, service execution, response commitment, execution records | Final accounting, buyer acceptance, NFT ownership decisions |
 | Service | Deterministic finalized NEAR account research | Payment verification or settlement |
 | React application | Wallet coordination and role-specific workflows | Authoritative state, hidden accounting, evidence substitution |
 | SDK and verifier | Canonical hashing, RPC access, event replay, cap checks, evidence reconciliation | Modifying protocol state |

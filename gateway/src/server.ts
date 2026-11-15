@@ -1,14 +1,15 @@
 import { randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type RequestListener, type ServerResponse } from "node:http";
 import { sha256 } from "./hash.js";
+import type { ServiceContext, ServiceDescriptor } from "./adapters.js";
 import type { GatewayStore } from "./store.js";
-import type { ChainOrder, ResearchRequest, ResearchResult } from "./types.js";
+import type { ChainOrder, ResearchRequest } from "./types.js";
 
 export interface GatewayChain {
   readonly networkId: string;
   readonly contractId: string;
   getOrder(orderId: string): Promise<ChainOrder | null>;
-  getSeries(seriesId: string): Promise<unknown>;
+  getSeries(seriesId: string): Promise<{ service_id: string } | null>;
   getActiveSeries(serviceId: string): Promise<string | null>;
   verifyAccessKey(accountId: string, publicKey: string): Promise<void>;
   verifyWalletMessage(
@@ -25,7 +26,8 @@ export interface GatewayChain {
 export interface GatewayDependencies {
   chain: GatewayChain;
   store: GatewayStore;
-  runService(request: ResearchRequest): Promise<ResearchResult>;
+  runService(serviceId: string, request: ResearchRequest, context: ServiceContext): Promise<unknown>;
+  listServices?: () => ServiceDescriptor[];
   now?: () => number;
 }
 
@@ -72,6 +74,10 @@ export function createGatewayHandler(dependencies: GatewayDependencies): Request
           contractId: dependencies.chain.contractId,
           trustBoundary: "Payment/state are verified onchain; output quality is buyer-assessed.",
         });
+      }
+
+      if (request.method === "GET" && url.pathname === "/services") {
+        return send(response, 200, { services: dependencies.listServices?.() ?? [] });
       }
 
       const quote = url.pathname.match(/^\/services\/([^/]+)\/quote$/);
@@ -143,7 +149,13 @@ export function createGatewayHandler(dependencies: GatewayDependencies): Request
         const existing = await dependencies.store.getExecution(orderId);
         if (existing) return send(response, 200, { ...existing, idempotentReplay: true });
 
-        const output = await dependencies.runService(serviceRequest);
+        const series = await dependencies.chain.getSeries(order.series_id);
+        if (!series) return send(response, 409, { error: "order series not found" });
+        const output = await dependencies.runService(series.service_id, serviceRequest, {
+          orderId,
+          seriesId: order.series_id,
+          serviceId: series.service_id,
+        });
         const responseHash = sha256(output);
         const deliveryTxHash = await dependencies.chain.submitDeliveryHash(orderId, responseHash);
         const record = {

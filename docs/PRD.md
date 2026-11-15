@@ -97,7 +97,7 @@ remaining entitlement = N - k
 | Hosted authenticated gateway | Method-restricted key, finalized payment proof, wallet challenge | **SHIPPED** |
 | Portfolio discovery | Paginated series and holder enumeration with filters | **SHIPPED** |
 | NEP-171 approvals | Approval, revoke, revoke-all, and enumeration compatibility | **SHIPPED** |
-| Multi-service adapters | Typed adapter registry, schemas, metering, SDK examples | **PLANNED** |
+| Multi-service adapters | Typed adapter registry, schemas, metering, SDK examples | **SHIPPED** |
 | Stable settlement | Whitelisted NEP-141 assets with storage and callback safety | **PLANNED** |
 | Risk view | Scenario analysis without APY or guaranteed-return language | **PLANNED** |
 | Durable execution | Transactional leases, unique order constraint, recovery worker | **PLANNED** |
@@ -247,7 +247,7 @@ The product may show funded advance, confirmed calls, settled revenue, remaining
 Current automated evidence:
 
 - 33 Rust contract unit and adversarial tests;
-- 10 gateway tests;
+- 13 gateway tests;
 - 6 SDK and ledger replay tests;
 - 5 near-workspaces sandbox flows using six roles;
 - Chromium coverage for the landing and application route;

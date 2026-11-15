@@ -22,21 +22,21 @@ describe("FIRST100 gateway", () => {
   let server: Server;
   let baseUrl: string;
   let chain: GatewayChain;
-  let runService: ReturnType<typeof vi.fn<(request: ResearchRequest) => Promise<ResearchResult>>>;
+  let runService: ReturnType<typeof vi.fn<(serviceId: string, request: ResearchRequest) => Promise<ResearchResult>>>;
 
   beforeEach(async () => {
     chain = {
       networkId: "testnet",
       contractId: "first100.testnet",
       getOrder: vi.fn(async (id) => (id === order.id ? { ...order } : null)),
-      getSeries: vi.fn(async () => ({ id: "series-1", unit_price_yocto: "100" })),
+      getSeries: vi.fn(async () => ({ id: "series-1", service_id: "research-api", unit_price_yocto: "100" })),
       getActiveSeries: vi.fn(async (id) => (id === "service-1" ? "series-1" : null)),
       verifyAccessKey: vi.fn(async () => undefined),
       verifyWalletMessage: vi.fn(async () => undefined),
       verifyPaymentTransaction: vi.fn(async () => undefined),
       submitDeliveryHash: vi.fn(async () => "delivery-tx"),
     };
-    runService = vi.fn(async (request) => ({
+    runService = vi.fn(async (_serviceId, request) => ({
       kind: "near-account-research",
       accountId: request.accountId,
       network: "testnet",
@@ -99,6 +99,27 @@ describe("FIRST100 gateway", () => {
     expect(await response.json()).toMatchObject({ id: "series-1", unit_price_yocto: "100" });
   });
 
+  it("lists configured service adapters", async () => {
+    const listedServer = createGatewayServer({
+      chain,
+      store: new MemoryGatewayStore(),
+      runService,
+      listServices: () => [{
+        id: "research-api",
+        version: "1.0.0",
+        title: "Research",
+        requestSchema: { type: "object" },
+        metering: "per-call",
+        source: "finalized-near-rpc",
+      }],
+    });
+    await new Promise<void>((resolve) => listedServer.listen(0, "127.0.0.1", resolve));
+    const url = `http://127.0.0.1:${(listedServer.address() as AddressInfo).port}`;
+    const response = await fetch(`${url}/services`);
+    expect(await response.json()).toMatchObject({ services: [{ id: "research-api" }] });
+    await new Promise<void>((resolve, reject) => listedServer.close((error) => error ? reject(error) : resolve()));
+  });
+
   it("rejects a challenge when wallet and order buyer differ", async () => {
     const { response } = await issueChallenge("attacker.testnet");
     expect(response.status).toBe(403);
@@ -112,6 +133,11 @@ describe("FIRST100 gateway", () => {
     expect(result.responseHash).toMatch(/^[a-f0-9]{64}$/);
     expect(result.deliveryTxHash).toBe("delivery-tx");
     expect(runService).toHaveBeenCalledTimes(1);
+    expect(runService).toHaveBeenCalledWith("research-api", requestPayload, {
+      orderId: "order-1",
+      seriesId: "series-1",
+      serviceId: "research-api",
+    });
     expect(chain.verifyPaymentTransaction).toHaveBeenCalledWith("payment-tx", "buyer.testnet", "order-1");
     expect(chain.submitDeliveryHash).toHaveBeenCalledWith("order-1", result.responseHash);
   });

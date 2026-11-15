@@ -49,7 +49,7 @@ export interface ExecutionRecord {
   paymentTxHash: string;
   requestHash: string;
   responseHash: string;
-  output: ResearchResult;
+  output: unknown;
   deliveryTxHash: string;
   executedAt: string;
 }

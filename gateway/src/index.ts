@@ -1,6 +1,6 @@
 import { NearChain } from "./chain.js";
+import { createDefaultServiceRegistry } from "./adapters.js";
 import { createGatewayServer } from "./server.js";
-import { researchNearAccount } from "./service.js";
 import { JsonGatewayStore } from "./store.js";
 
 const networkId = process.env.NEAR_NETWORK_ID ?? "testnet";
@@ -18,10 +18,12 @@ const chain = new NearChain(
   process.env.GATEWAY_PRIVATE_KEY,
 );
 const store = new JsonGatewayStore(process.env.GATEWAY_DATA_FILE ?? "./gateway/data/state.json");
+const services = createDefaultServiceRegistry(chain);
 const server = createGatewayServer({
   chain,
   store,
-  runService: (request) => researchNearAccount(chain, request),
+  runService: (serviceId, request, context) => services.execute(serviceId, request, context),
+  listServices: () => services.list(),
 });
 const port = Number(process.env.GATEWAY_PORT ?? 8787);
 server.listen(port, "127.0.0.1", () => {
