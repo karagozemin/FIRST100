@@ -95,8 +95,8 @@ remaining entitlement = N - k
 | --- | --- | --- |
 | Interactive application | Seller, investor, customer, holder, and proof workflows | **SHIPPED** |
 | Hosted authenticated gateway | Method-restricted key, finalized payment proof, wallet challenge | **SHIPPED** |
-| Portfolio discovery | Paginated series and holder enumeration with filters | **PLANNED** |
-| NEP-171 approvals | Approval, revoke, revoke-all, and enumeration compatibility | **PLANNED** |
+| Portfolio discovery | Paginated series and holder enumeration with filters | **SHIPPED** |
+| NEP-171 approvals | Approval, revoke, revoke-all, and enumeration compatibility | **SHIPPED** |
 | Multi-service adapters | Typed adapter registry, schemas, metering, SDK examples | **PLANNED** |
 | Stable settlement | Whitelisted NEP-141 assets with storage and callback safety | **PLANNED** |
 | Risk view | Scenario analysis without APY or guaranteed-return language | **PLANNED** |
@@ -246,7 +246,7 @@ The product may show funded advance, confirmed calls, settled revenue, remaining
 
 Current automated evidence:
 
-- 31 Rust contract unit and adversarial tests;
+- 33 Rust contract unit and adversarial tests;
 - 10 gateway tests;
 - 6 SDK and ledger replay tests;
 - 5 near-workspaces sandbox flows using six roles;
@@ -275,6 +275,7 @@ Secrets, private keys, fabricated hashes, and non-English repository copy are pr
 ## 16. Evidence package
 
 - Contract: https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet
+- Portfolio upgrade: https://explorer.testnet.near.org/transactions/59jfjSMMExNGKB4QP6pj6ohpL3QCg2RuoMAqbTZstL2p
 - Funding: https://explorer.testnet.near.org/transactions/Cvm36ephVCw6x1QPb51HiXSHkWAAgzBTvcPU3vYwte8v
 - First settlement: https://explorer.testnet.near.org/transactions/2T7cBtrycCjcNxQzVDkJVxFEoCa9Rb2wAxvqESvqt8Ek
 - NFT transfer: https://explorer.testnet.near.org/transactions/9iA3WXYeZpXdBBJhsFXTkazM1KCygg3YT4K6t6fXtCHF

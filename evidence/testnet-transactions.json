@@ -8,6 +8,18 @@
       "hash": "8cQA7JzsBkPwjHQoWPNn5r1jfJ9X7yTHzQG1DcB1fiBQ",
       "signerId": "first100-v2-20261115.testnet"
     },
+    "portfolioUpgrade": {
+      "hash": "59jfjSMMExNGKB4QP6pj6ohpL3QCg2RuoMAqbTZstL2p",
+      "signerId": "first100-v2-20261115.testnet"
+    },
+    "nftExtensions": {
+      "hash": "2mgvTppZZAmht64Bwwv2pVaZSvQY7rkPT4xasR17mBiv",
+      "signerId": "first100-v2-20261115.testnet"
+    },
+    "portfolioBackfill": {
+      "hash": "2jkjkwemorxu1dWA4ty3hotPYHq13RP7vSNvKU4EJkFz",
+      "signerId": "first100-v2-20261115.testnet"
+    },
     "service": {
       "hash": "DXAWBd2nHVvk4w2NzSbTrgmwyDzwSh4j8MAMThuVQvUu",
       "signerId": "seller.first100-v2-20261115.testnet"

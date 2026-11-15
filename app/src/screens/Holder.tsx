@@ -10,17 +10,31 @@ export function Holder({ wallet, accountId, record }: { wallet: Wallet | undefin
   const [receiver, setReceiver] = useState("");
   const [series, setSeries] = useState<Series>();
   const [token, setToken] = useState<Token>();
+  const [owned, setOwned] = useState<Token[]>([]);
   const [credit, setCredit] = useState("0");
   const [message, setMessage] = useState("");
 
-  async function load() {
-    const found = await rpc.view<Series | null>("get_series", { series_id: seriesId });
+  async function load(id = seriesId) {
+    setSeriesId(id);
+    const found = await rpc.view<Series | null>("get_series", { series_id: id });
     if (!found) return setMessage("Series not found.");
     const [nft, userCredit] = await Promise.all([
       rpc.view<Token | null>("nft_token", { token_id: found.beneficiary_token_id }),
       accountId ? rpc.view<string>("get_credit", { account_id: accountId }) : Promise.resolve("0"),
     ]);
     setSeries(found); setToken(nft ?? undefined); setCredit(userCredit); setMessage("");
+  }
+  async function loadOwned() {
+    if (!accountId) return;
+    try {
+      const tokens = await rpc.view<Token[]>("nft_tokens_for_owner", {
+        account_id: accountId,
+        from_index: "0",
+        limit: 50,
+      });
+      setOwned(tokens);
+      if (!tokens.length) setMessage("This wallet does not hold a FIRST100 revenue right.");
+    } catch (error) { setMessage(String(error)); }
   }
   async function transfer() {
     if (!wallet || !series || !receiver) return;
@@ -43,6 +57,11 @@ export function Holder({ wallet, accountId, record }: { wallet: Wallet | undefin
       <div className="eyebrow">04 · HOLDER</div>
       <h2>Own the right. Keep prior cashflow separate.</h2>
       <div className="inline-form"><Field label="Series ID" value={seriesId} onChange={setSeriesId} /><Button onClick={load} secondary>Load rights</Button></div>
+      <div className="portfolio-head"><span>YOUR RIGHTS</span><button onClick={() => void loadOwned()} disabled={!accountId}>LOAD WALLET</button></div>
+      {owned.length > 0 && <div className="series-list">{owned.map((item) => {
+        const id = item.token_id.replace(/^right:/, "");
+        return <button key={item.token_id} onClick={() => void load(id)}><span>REVENUE RIGHT</span><strong>{id}</strong><small>{item.owner_id}</small></button>;
+      })}</div>}
       {series && <div className="stats compact">
         <Stat label="Current owner" value={token?.owner_id ?? "not minted"} />
         <Stat label="Settled entitlement" value={`${series.settled_count} / ${series.cap_n}`} />

@@ -131,7 +131,7 @@ Default local endpoints:
 ## Build and test
 
 ```bash
-npm test                    # 31 contract + 10 gateway + 6 SDK tests
+npm test                    # 33 contract + 10 gateway + 6 SDK tests
 npm run build               # gateway, web application, and SDK production builds
 npm run build:contract      # optimized WASM and checksum
 npm run test:workspaces     # 5 end-to-end protocol tests on NEAR sandbox
@@ -168,10 +168,11 @@ The committed WASM checksum is stored in [`artifacts/first100_revenue_rights.was
 | `close_expired_series` | Any account | none | Close an expired series with no open orders |
 | `withdraw` | Credited account | `1 yoctoNEAR` | Start an asynchronous pull-payment transfer |
 | `nft_transfer*` | NFT owner or approved account | `1 yoctoNEAR` | Transfer future settlement rights |
+| `nft_approve` / `nft_revoke*` | NFT owner | storage / `1 yoctoNEAR` | Manage marketplace-compatible transfer approvals |
 
 ### Important views
 
-`get_service`, `get_series`, `get_order`, `get_credit`, `get_withdrawal`, `get_active_series`, `get_open_order_count`, `is_transfer_pending`, `audit_totals`, `nft_token`, and `nft_metadata`.
+`get_service`, `get_services`, `get_series`, `get_series_page`, `get_order`, `get_credit`, `get_withdrawal`, `get_active_series`, `get_open_order_count`, `is_transfer_pending`, `audit_totals`, `nft_token`, `nft_tokens`, `nft_tokens_for_owner`, and `nft_metadata`.
 
 Financial values are decimal yoctoNEAR strings in JSON. Nanosecond timestamps are also strings to avoid JavaScript integer precision loss.
 
@@ -189,7 +190,7 @@ The gateway currently runs a deterministic NEAR account research service. It ret
 
 ## Evidence and verification
 
-The public contract is deployed at [`first100-v2-20261115.testnet`](https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet). Its evidence manifest records 19 finalized transactions spanning deployment, funding, two paid service executions, transfer-aware settlement, timeout refund, and completed withdrawals.
+The public contract is deployed at [`first100-v2-20261115.testnet`](https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet). Its evidence manifest records 22 finalized transactions spanning deployment, portfolio upgrade, funding, two paid service executions, transfer-aware settlement, timeout refund, and completed withdrawals.
 
 The evidence verifier is designed to fail closed. It rejects an undeployed manifest, a missing contract ID, placeholder hashes, failed transactions, wrong receivers, missing terminal events, cap violations, duplicate terminal outcomes, and totals that do not reconcile with `audit_totals`.
 

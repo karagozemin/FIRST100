@@ -18,6 +18,9 @@ const DEFAULT_OPERATING_RESERVE: u128 = 200_000_000_000_000_000_000_000; // 0.2 
 const MIN_CONFIRM_TIMEOUT_NS: u64 = 60_000_000_000;
 const MAX_CONFIRM_TIMEOUT_NS: u64 = 7 * 24 * 60 * 60 * 1_000_000_000;
 const MAX_CAP: u32 = 10_000;
+const MAX_PAGE_SIZE: u32 = 100;
+const SERVICE_INDEX: &[u8] = b"first100:index:services:v1";
+const SERIES_INDEX: &[u8] = b"first100:index:series:v1";
 
 #[near(contract_state)]
 #[derive(PanicOnDefault)]
@@ -46,7 +49,9 @@ pub struct Contract {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use near_contract_standards::non_fungible_token::approval::NonFungibleTokenApproval;
     use near_contract_standards::non_fungible_token::core::NonFungibleTokenCore;
+    use near_contract_standards::non_fungible_token::enumeration::NonFungibleTokenEnumeration;
     use near_sdk::test_utils::VMContextBuilder;
     use near_sdk::{testing_env, AccountId, PromiseResult};
 
@@ -522,6 +527,62 @@ mod tests {
         assert_eq!(audit.active_order_escrow, U128(UNIT));
         assert_eq!(audit.total_liabilities, U128(ADVANCE + UNIT));
     }
+
+    #[test]
+    fn indexes_services_and_series_for_portfolio_discovery() {
+        let contract = listed(100);
+        assert_eq!(contract.get_service_count(), U64(1));
+        assert_eq!(contract.get_series_count(), U64(1));
+        assert_eq!(contract.get_services(None, Some(10))[0].id, "research-api");
+        let page = contract.get_series_page(
+            None,
+            Some(10),
+            Some(SeriesStatus::Listed),
+            Some(account("seller.test.near")),
+            Some("research-api".into()),
+        );
+        assert_eq!(page.len(), 1);
+        assert_eq!(page[0].id, "series-001");
+    }
+
+    #[test]
+    fn supports_nft_enumeration_approval_and_approved_transfer() {
+        let mut contract = funded(100);
+        assert_eq!(contract.nft_total_supply(), U128(1));
+        assert_eq!(
+            contract
+                .nft_tokens_for_owner(account("investor.test.near"), None, Some(10))
+                .len(),
+            1
+        );
+
+        set_context(
+            "investor.test.near",
+            1_000_000_000_000_000_000_000_000,
+            NOW + 2,
+        );
+        contract.nft_approve("right:series-001".into(), account("market.test.near"), None);
+        assert!(contract.nft_is_approved(
+            "right:series-001".into(),
+            account("market.test.near"),
+            Some(1),
+        ));
+
+        set_context("market.test.near", 1, NOW + 3);
+        contract.nft_transfer(
+            account("buyer.test.near"),
+            "right:series-001".into(),
+            Some(1),
+            None,
+        );
+        assert_eq!(
+            contract
+                .nft_token("right:series-001".into())
+                .unwrap()
+                .owner_id,
+            account("buyer.test.near")
+        );
+    }
 }
 
 #[near]
@@ -546,8 +607,8 @@ impl Contract {
                 StorageKey::Nft,
                 owner_id,
                 Some(StorageKey::NftMetadata),
-                None::<StorageKey>,
-                None::<StorageKey>,
+                Some(b"first100:nft-enumeration:v1".to_vec()),
+                Some(b"first100:nft-approvals:v1".to_vec()),
             ),
             next_withdrawal_id: 0,
             total_credits: 0,
@@ -584,6 +645,7 @@ impl Contract {
             is_active: true,
         };
         self.services.insert(&service_id, &service);
+        Self::append_index(SERVICE_INDEX, &service_id);
         events::emit(
             "service_registered",
             ServiceRegistered {
@@ -653,6 +715,7 @@ impl Contract {
             status: SeriesStatus::Listed,
         };
         self.series.insert(&series_id, &series);
+        Self::append_index(SERIES_INDEX, &series_id);
         self.open_orders_by_series.insert(&series_id, &0);
         events::emit(
             "series_listed",
@@ -1087,6 +1150,78 @@ impl Contract {
         self.services.get(&service_id)
     }
 
+    pub fn get_owner_id(&self) -> AccountId {
+        self.owner_id.clone()
+    }
+
+    pub fn get_service_count(&self) -> U64 {
+        U64(Self::index_length(SERVICE_INDEX))
+    }
+
+    pub fn get_services(&self, from_index: Option<U64>, limit: Option<u32>) -> Vec<Service> {
+        let start = from_index.map(|value| value.0).unwrap_or(0);
+        let take = limit.unwrap_or(20).clamp(1, MAX_PAGE_SIZE) as u64;
+        let end = Self::index_length(SERVICE_INDEX).min(start.saturating_add(take));
+        (start..end)
+            .filter_map(|index| Self::index_item(SERVICE_INDEX, index))
+            .filter_map(|id| self.services.get(&id))
+            .collect()
+    }
+
+    pub fn get_series_count(&self) -> U64 {
+        U64(Self::index_length(SERIES_INDEX))
+    }
+
+    pub fn get_series_page(
+        &self,
+        from_index: Option<U64>,
+        limit: Option<u32>,
+        status: Option<SeriesStatus>,
+        seller: Option<AccountId>,
+        service_id: Option<ServiceId>,
+    ) -> Vec<RevenueSeriesView> {
+        let mut index = from_index.map(|value| value.0).unwrap_or(0);
+        let total = Self::index_length(SERIES_INDEX);
+        let take = limit.unwrap_or(20).clamp(1, MAX_PAGE_SIZE) as usize;
+        let mut result = Vec::with_capacity(take);
+        while index < total && result.len() < take {
+            if let Some(id) = Self::index_item(SERIES_INDEX, index) {
+                if let Some(series) = self.series.get(&id) {
+                    let matches = status.as_ref().is_none_or(|value| &series.status == value)
+                        && seller.as_ref().is_none_or(|value| &series.seller == value)
+                        && service_id
+                            .as_ref()
+                            .is_none_or(|value| &series.service_id == value);
+                    if matches {
+                        result.push(series.into());
+                    }
+                }
+            }
+            index += 1;
+        }
+        result
+    }
+
+    pub fn backfill_indexes(
+        &mut self,
+        service_ids: Vec<ServiceId>,
+        series_ids: Vec<SeriesId>,
+    ) -> (U64, U64) {
+        require!(env::predecessor_account_id() == self.owner_id, "owner only");
+        for id in service_ids {
+            require!(self.services.get(&id).is_some(), "service not found");
+            Self::append_index(SERVICE_INDEX, &id);
+        }
+        for id in series_ids {
+            require!(self.series.get(&id).is_some(), "series not found");
+            Self::append_index(SERIES_INDEX, &id);
+        }
+        (
+            U64(Self::index_length(SERVICE_INDEX)),
+            U64(Self::index_length(SERIES_INDEX)),
+        )
+    }
+
     pub fn get_series(&self, series_id: SeriesId) -> Option<RevenueSeriesView> {
         self.series.get(&series_id).map(Into::into)
     }
@@ -1145,6 +1280,40 @@ impl Contract {
 
     pub(crate) fn token_id_for(series_id: &str) -> TokenId {
         format!("right:{series_id}")
+    }
+
+    fn index_length(prefix: &[u8]) -> u64 {
+        let mut key = prefix.to_vec();
+        key.extend(b":length");
+        env::storage_read(&key)
+            .and_then(|value| value.try_into().ok())
+            .map(u64::from_le_bytes)
+            .unwrap_or(0)
+    }
+
+    fn index_item(prefix: &[u8], index: u64) -> Option<String> {
+        let mut key = prefix.to_vec();
+        key.extend(b":item:");
+        key.extend(index.to_le_bytes());
+        env::storage_read(&key).and_then(|value| String::from_utf8(value).ok())
+    }
+
+    fn append_index(prefix: &[u8], id: &str) {
+        let mut seen = prefix.to_vec();
+        seen.extend(b":seen:");
+        seen.extend(env::sha256(id.as_bytes()));
+        if env::storage_has_key(&seen) {
+            return;
+        }
+        let length = Self::index_length(prefix);
+        let mut item = prefix.to_vec();
+        item.extend(b":item:");
+        item.extend(length.to_le_bytes());
+        env::storage_write(&item, id.as_bytes());
+        let mut length_key = prefix.to_vec();
+        length_key.extend(b":length");
+        env::storage_write(&length_key, &length.saturating_add(1).to_le_bytes());
+        env::storage_write(&seen, b"1");
     }
 
     fn add_credit(&mut self, account_id: &AccountId, amount: u128) {

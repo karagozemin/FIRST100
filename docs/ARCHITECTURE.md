@@ -87,6 +87,8 @@ A series defines:
 
 Multiple unfunded listings may exist, but only one funded series can be active for a service at a time.
 
+Services and series are also written to append-only discovery indexes. Paginated views apply optional status, seller, and service filters without making the web application an indexing authority.
+
 ### API order
 
 An order stores the buyer, series, request hash, optional response hash, exact escrowed amount, timestamps, status, and final beneficiary. The buyer, series, and client nonce tuple is hashed into a unique order ID and cannot be reused.
@@ -186,6 +188,8 @@ sequenceDiagram
 ```
 
 For `nft_transfer_call`, ownership resolution is asynchronous. The contract marks the token as pending, blocks settlement for that token, lets the resolver accept or revert the transfer, and only then removes the lock. This prevents a confirmation from observing ambiguous ownership.
+
+The NFT exposes NEP-171 approval management and enumeration. Approval IDs authorize marketplace-style transfers, while `nft_tokens_for_owner` provides holder portfolio discovery. Existing testnet tokens were backfilled through an owner-only, idempotent extension initializer after the code upgrade.
 
 After `settled_count == cap_n`, later confirmed orders route to the seller and no longer increment the entitlement count.
 
