@@ -1,0 +1,69 @@
+{
+  "version": "1",
+  "network": "testnet",
+  "contractId": "first100-v2-20261115.testnet",
+  "seriesId": "first100-live-001",
+  "receipts": [
+    {
+      "orderId": "fcd398a436f89722a056639df524b553782c3e63e813226efda6490a729eb3be",
+      "buyer": "customer-c.first100-v2-20261115.testnet",
+      "beneficiary": "investor-a.first100-v2-20261115.testnet",
+      "request": {
+        "accountId": "first100-v2-20261115.testnet"
+      },
+      "requestHash": "e8b3d9b6e2ec0506a82dc752976d57d244839ff2d22d09ced1255ce570be75d5",
+      "response": {
+        "kind": "near-account-research",
+        "accountId": "first100-v2-20261115.testnet",
+        "network": "testnet",
+        "blockHeight": 277860897,
+        "amountYocto": "4845195944880699900000000",
+        "lockedYocto": "0",
+        "storageUsageBytes": 256110,
+        "codeHash": "8Yvj5jcvGKHNCYmz6FqCF4V4A77e55Ax6iRz8EX2NUsH",
+        "classification": "contract",
+        "summary": "first100-v2-20261115.testnet is a contract with 256110 bytes of onchain storage at finalized block 277860897.",
+        "source": "finalized-near-rpc"
+      },
+      "responseHash": "71ae70f1077bebd4f853e463046f74c84a048c2621c71169638811606e04116f",
+      "paymentTxHash": "7gvZxA3aLYaETYATQ5DoVeoKZba8gaXFGKKUY5FRNCk",
+      "deliveryTxHash": "C2QyZfRFFnpCJraFJjSbht9ujP6JMrnYD2cma3QcVPUM",
+      "confirmationTxHash": "2T7cBtrycCjcNxQzVDkJVxFEoCa9Rb2wAxvqESvqt8Ek"
+    },
+    {
+      "orderId": "8ad731171c12eca494adfedf177434877d5ba6b14de0adff3cc050ee5cbdcf04",
+      "buyer": "customer-d.first100-v2-20261115.testnet",
+      "beneficiary": "investor-b.first100-v2-20261115.testnet",
+      "request": {
+        "accountId": "seller.first100-v2-20261115.testnet"
+      },
+      "requestHash": "25b03048c67fc93ca25d0c79c5a7f03f28a28539895c6df762c736f1a424fc43",
+      "response": {
+        "kind": "near-account-research",
+        "accountId": "seller.first100-v2-20261115.testnet",
+        "network": "testnet",
+        "blockHeight": 277861026,
+        "amountYocto": "969568173073020700000000",
+        "lockedYocto": "0",
+        "storageUsageBytes": 182,
+        "codeHash": "11111111111111111111111111111111",
+        "classification": "account",
+        "summary": "seller.first100-v2-20261115.testnet is an account with 182 bytes of onchain storage at finalized block 277861026.",
+        "source": "finalized-near-rpc"
+      },
+      "responseHash": "aab53d9dc476612af8adb27294f0636197f1219938485aafdcff28de84c84db1",
+      "paymentTxHash": "3BdGVZgGpy9J549JKWqJTgQD47yuCSDQ1azbTNc6C7rU",
+      "deliveryTxHash": "G7jwvyY3LMENkRfyg3iHm7bUc95cQrrNcRjtuhF42Txe",
+      "confirmationTxHash": "78ZKVU5irTEUDW9BrEKfkCB74a1dbaD3QHFbtsRcPWdN"
+    }
+  ],
+  "refundProof": {
+    "seriesId": "refund-live-001",
+    "orderId": "1c2481354f6dc718c23e31f27187e32afe7b7929cd88375bb8ef91899c3d3dd8",
+    "buyer": "customer-c.first100-v2-20261115.testnet",
+    "confirmationTimeoutNs": "60000000000",
+    "paymentTxHash": "9Wmju5hYFfYdWjiQ8fQo9UgqqdowF7hhKDHTiKLQFz9T",
+    "refundTxHash": "6grwuYPbzXh66FVXEV9uQcuBqMkGw7WKkLp51yHogYvD",
+    "withdrawalTxHash": "2bUphNwqdz6VpHq1kn8XfnxHcGcfUiC9tQSi1sdjjnZt"
+  }
+}

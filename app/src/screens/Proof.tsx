@@ -4,7 +4,10 @@ import type { ActionProof } from "../types";
 import { Notice } from "../ui";
 
 export function Proof({ sessionProofs }: { sessionProofs: ActionProof[] }) {
-  const saved = Object.entries(evidence.transactions as Record<string, string>).map(([label, hash]) => ({ label, hash }));
+  const saved = Object.entries(evidence.transactions).map(([label, transaction]) => ({
+    label,
+    hash: transaction.hash,
+  }));
   const proofs = [...saved, ...sessionProofs];
   return <section className="proof-layout">
     <div>

@@ -17,6 +17,7 @@ export async function researchNearAccount(
   const amountYocto = String(account.amount ?? "0");
   const lockedYocto = String(account.locked ?? "0");
   const storageUsageBytes = Number(account.storage_usage ?? 0);
+  const article = classification === "account" ? "an" : "a";
   return {
     kind: "near-account-research",
     accountId: request.accountId,
@@ -27,7 +28,7 @@ export async function researchNearAccount(
     storageUsageBytes,
     codeHash,
     classification,
-    summary: `${request.accountId} is a ${classification} with ${storageUsageBytes} bytes of onchain storage at finalized block ${blockHeight}.`,
+    summary: `${request.accountId} is ${article} ${classification} with ${storageUsageBytes} bytes of onchain storage at finalized block ${blockHeight}.`,
     source: "finalized-near-rpc",
   };
 }

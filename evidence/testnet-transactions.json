@@ -1,7 +1,84 @@
 {
   "network": "testnet",
-  "contractId": "",
+  "contractId": "first100-v2-20261115.testnet",
   "rpcUrl": "https://rpc.testnet.near.org",
-  "status": "not-deployed",
-  "transactions": {}
+  "status": "testnet",
+  "transactions": {
+    "deployment": {
+      "hash": "8cQA7JzsBkPwjHQoWPNn5r1jfJ9X7yTHzQG1DcB1fiBQ",
+      "signerId": "first100-v2-20261115.testnet"
+    },
+    "service": {
+      "hash": "DXAWBd2nHVvk4w2NzSbTrgmwyDzwSh4j8MAMThuVQvUu",
+      "signerId": "seller.first100-v2-20261115.testnet"
+    },
+    "series": {
+      "hash": "GqKZnAJYTcYRoQUzudukFH2dgtG9SUK3oqkk4Ps72SfT",
+      "signerId": "seller.first100-v2-20261115.testnet"
+    },
+    "funding": {
+      "hash": "Cvm36ephVCw6x1QPb51HiXSHkWAAgzBTvcPU3vYwte8v",
+      "signerId": "investor-a.first100-v2-20261115.testnet"
+    },
+    "orderOne": {
+      "hash": "7gvZxA3aLYaETYATQ5DoVeoKZba8gaXFGKKUY5FRNCk",
+      "signerId": "customer-c.first100-v2-20261115.testnet"
+    },
+    "deliveryOne": {
+      "hash": "C2QyZfRFFnpCJraFJjSbht9ujP6JMrnYD2cma3QcVPUM",
+      "signerId": "gateway.first100-v2-20261115.testnet"
+    },
+    "confirmOne": {
+      "hash": "2T7cBtrycCjcNxQzVDkJVxFEoCa9Rb2wAxvqESvqt8Ek",
+      "signerId": "customer-c.first100-v2-20261115.testnet"
+    },
+    "nftTransfer": {
+      "hash": "9iA3WXYeZpXdBBJhsFXTkazM1KCygg3YT4K6t6fXtCHF",
+      "signerId": "investor-a.first100-v2-20261115.testnet"
+    },
+    "orderTwo": {
+      "hash": "3BdGVZgGpy9J549JKWqJTgQD47yuCSDQ1azbTNc6C7rU",
+      "signerId": "customer-d.first100-v2-20261115.testnet"
+    },
+    "deliveryTwo": {
+      "hash": "G7jwvyY3LMENkRfyg3iHm7bUc95cQrrNcRjtuhF42Txe",
+      "signerId": "gateway.first100-v2-20261115.testnet"
+    },
+    "confirmTwo": {
+      "hash": "78ZKVU5irTEUDW9BrEKfkCB74a1dbaD3QHFbtsRcPWdN",
+      "signerId": "customer-d.first100-v2-20261115.testnet"
+    },
+    "sellerWithdraw": {
+      "hash": "FdfAYhTiqJKPJkph4PkW8zrKpHkeL6FbV5fBbH5tdvxt",
+      "signerId": "seller.first100-v2-20261115.testnet"
+    },
+    "priorHolderWithdraw": {
+      "hash": "4X9WegLzv5dFLTSPvgPQGaGgbWYzEchcwoYY5EEoLtWN",
+      "signerId": "investor-a.first100-v2-20261115.testnet"
+    },
+    "refundService": {
+      "hash": "EMpM4xpvimN8XUJH6dqDE53pGTwp895ZVJoYsnuCUYMu",
+      "signerId": "seller.first100-v2-20261115.testnet"
+    },
+    "refundSeries": {
+      "hash": "qBe4jn1HBaFjM6TiNf5trJ3hp9XMFurzRLq3qE4mZ5y",
+      "signerId": "seller.first100-v2-20261115.testnet"
+    },
+    "refundFunding": {
+      "hash": "EpdQiNdL33ac2W5tdQFmDwBQTcrV7wfTkLt6uSNFK31v",
+      "signerId": "investor-b.first100-v2-20261115.testnet"
+    },
+    "refundOrder": {
+      "hash": "9Wmju5hYFfYdWjiQ8fQo9UgqqdowF7hhKDHTiKLQFz9T",
+      "signerId": "customer-c.first100-v2-20261115.testnet"
+    },
+    "refundClaim": {
+      "hash": "6grwuYPbzXh66FVXEV9uQcuBqMkGw7WKkLp51yHogYvD",
+      "signerId": "customer-c.first100-v2-20261115.testnet"
+    },
+    "refundWithdraw": {
+      "hash": "2bUphNwqdz6VpHq1kn8XfnxHcGcfUiC9tQSi1sdjjnZt",
+      "signerId": "customer-c.first100-v2-20261115.testnet"
+    }
+  }
 }

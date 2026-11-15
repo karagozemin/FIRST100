@@ -6,6 +6,6 @@
 - There is no distributed transaction between service execution and the onchain delivery call. The service is deterministic and replayable; production should add a pending execution and lease table.
 - One NFT represents the entire remaining first-N entitlement for one series. Fractional ownership is not implemented.
 - Marketplace pricing, secondary sales, DAO governance, and multi-token payments are outside P0.
-- Testnet deployment, real explorer hashes, and an independent security audit are not complete.
+- Testnet deployment and real explorer evidence are complete; an independent security audit is not.
 - The current official NEAR wallet and crypto dependency tree reports low-severity `elliptic` findings in npm audit. There are no high- or moderate-severity production findings. Recheck upstream status before mainnet use.
 - Legal classification, taxation, and securities compliance are not addressed at the product layer.

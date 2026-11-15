@@ -8,9 +8,9 @@
 
 FIRST100 lets an AI service finance a bounded set of future sales without selling the company, API ownership, or all future revenue. A seller lists the first `N` eligible sales, an investor funds the series and receives a NEP-171 revenue-right NFT, and each buyer-confirmed sale is routed by the contract to the NFT owner at settlement time.
 
-The repository contains the complete P0 implementation defined by PRD v2.0: the NEAR contract, authenticated service gateway, SDK, five-role web application, sandbox integration tests, evidence verifier, and deployment tooling.
+The repository contains the protocol core defined by PRD v2.1: the NEAR contract, authenticated service gateway, SDK, dormant role screens, public submission landing, sandbox integration tests, evidence verifier, and deployment tooling.
 
-> **Current status:** local builds and automated tests pass. Testnet deployment, real explorer evidence, and an independent security audit are not yet complete. The repository never substitutes placeholders for those claims.
+> **Current status:** local builds, automated tests, public testnet deployment, and finalized explorer evidence are complete. The interactive dashboard, hosted gateway, and independent security audit are not yet complete. The repository never substitutes placeholders for those claims.
 
 ## Why FIRST100
 
@@ -74,6 +74,7 @@ The complete rationale, lifecycle, accounting model, trust boundaries, and failu
 
 Supporting documents:
 
+- [Product requirements and delivery record](docs/PRD.md)
 - [Protocol invariants](docs/INVARIANTS.md)
 - [Threat model](docs/THREAT_MODEL.md)
 - [Known limitations](docs/KNOWN_LIMITATIONS.md)
@@ -87,13 +88,13 @@ Supporting documents:
 | `contracts/revenue-rights` | Rust contract, accounting state machine, events, and NEP-171 implementation |
 | `gateway` | Payment and wallet verification, service execution, response commitment, and durable local records |
 | `sdk` | RPC helpers, canonical hashing, amount conversion, and independent ledger replay |
-| `app` | React interface for seller, investor, customer, holder, and auditor workflows |
+| `app` | Public landing plus dormant seller, investor, customer, holder, and auditor screens |
 | `tests/workspaces` | Optimized WASM tests against NEAR sandbox with six accounts |
-| `tests/e2e` | Browser-level smoke coverage for all five UI roles |
+| `tests/e2e` | Browser-level coverage for the public landing and honest dashboard release state |
 | `artifacts` | Optimized contract WASM and its SHA-256 checksum |
-| `evidence` | Testnet evidence manifest; intentionally `not-deployed` until real hashes exist |
+| `evidence` | Finalized testnet transaction manifest, service receipts, and refund proof |
 | `scripts` | Reproducible contract build, sandbox test, and testnet deployment commands |
-| `docs` | Architecture, invariants, threat model, limitations, and demo guidance |
+| `docs` | PRD, architecture, invariants, threat model, limitations, and demo guidance |
 
 ## Quick start
 
@@ -131,7 +132,7 @@ Default local endpoints:
 ## Build and test
 
 ```bash
-npm test                    # 31 contract + 7 gateway + 6 SDK tests
+npm test                    # 31 contract + 8 gateway + 6 SDK tests
 npm run build               # gateway, web application, and SDK production builds
 npm run build:contract      # optimized WASM and checksum
 npm run test:workspaces     # 5 end-to-end protocol tests on NEAR sandbox
@@ -189,15 +190,17 @@ The gateway currently runs a deterministic NEAR account research service. It ret
 
 ## Evidence and verification
 
+The public P0 contract is deployed at [`first100-v2-20261115.testnet`](https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet). Its evidence manifest records 19 finalized transactions spanning deployment, funding, two paid service executions, transfer-aware settlement, timeout refund, and completed withdrawals.
+
 The evidence verifier is designed to fail closed. It rejects an undeployed manifest, a missing contract ID, placeholder hashes, failed transactions, wrong receivers, missing terminal events, cap violations, duplicate terminal outcomes, and totals that do not reconcile with `audit_totals`.
 
-After a real deployment, populate `evidence/testnet-transactions.json` and run:
+Verify the live evidence:
 
 ```bash
 npm run verify:ledger -- evidence/testnet-transactions.json
 ```
 
-Until then, the manifest remains intentionally marked `not-deployed`.
+The two service receipts are preserved in [`evidence/service-receipts.json`](evidence/service-receipts.json). Each includes the finalized RPC output and the hashes that connect payment, delivery, and buyer confirmation.
 
 ## Testnet deployment
 
@@ -209,7 +212,7 @@ export OWNER_ID=yourname.testnet
 npm run deploy:testnet
 ```
 
-After deployment, record real transactions, run the verifier, and update the delivery status. Do not replace missing evidence with examples that look real.
+The checked-in deployment is evidence, not a production endorsement. Use a separate account for any redeployment and never replace missing evidence with examples that look real.
 
 ## Security and limitations
 

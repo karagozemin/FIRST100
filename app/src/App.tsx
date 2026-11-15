@@ -2,6 +2,7 @@ import logo from "../../first100-logo.png";
 
 const githubUrl = "https://github.com/karagozemin/FIRST100";
 const architectureUrl = `${githubUrl}/blob/main/docs/ARCHITECTURE.md`;
+const contractUrl = "https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet";
 
 function Arrow() {
   return <span aria-hidden="true">↗</span>;
@@ -115,11 +116,11 @@ export default function App() {
           <article><span>03</span><h3>Replayable ledger</h3><p>Independent tooling rebuilds terminal events and reconciles them with onchain audit totals.</p></article>
         </div>
         <div className="proof-bar">
-          <div><span className="proof-dot" /> LOCAL VERIFICATION</div>
-          <div><strong>50</strong><span>automated tests</span></div>
+          <div><span className="proof-dot" /> LIVE TESTNET EVIDENCE</div>
+          <div><strong>51</strong><span>automated tests</span></div>
           <div><strong>6</strong><span>sandbox accounts</span></div>
           <div><strong>0</strong><span>fabricated testnet claims</span></div>
-          <a href={githubUrl} target="_blank" rel="noreferrer">Review source <Arrow /></a>
+          <a href={contractUrl} target="_blank" rel="noreferrer">Open contract <Arrow /></a>
         </div>
       </section>
 
@@ -128,7 +129,7 @@ export default function App() {
           <p className="section-index">04 — THE APP</p>
           <div className="coming-pill"><span /> COMING SOON</div>
           <h2>The protocol dashboard is being prepared.</h2>
-          <p>The contract, gateway, SDK, and verification flows are implemented. The public dashboard will open after testnet deployment and evidence collection.</p>
+          <p>The contract is live on NEAR testnet with finalized funding, service, transfer, settlement, and withdrawal evidence. The public dashboard is the next release.</p>
           <p className="fine-print">No wallet connection is active on this landing page.</p>
         </div>
         <div className="dashboard-shell" aria-label="Dashboard preview, coming soon">

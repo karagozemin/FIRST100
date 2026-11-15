@@ -1,6 +1,6 @@
 # FIRST100 — Submission draft
 
-> Status: Local P0 and sandbox evidence are complete. Keep testnet URL and hash fields empty until a real deployment exists.
+> Status: Contract, gateway, SDK, sandbox, public landing, and public testnet evidence are complete. The interactive wallet dashboard remains intentionally unavailable.
 
 ## One-liner
 
@@ -21,19 +21,22 @@ The token is the live routing key for future, buyer-confirmed protocol revenue. 
 ## Verifiable proof
 
 - 31 contract unit/adversarial tests.
-- 7 gateway integration tests and 6 independent SDK/ledger tests.
-- Five-state sandbox suite using deployed optimized WASM and six accounts.
-- Chromium smoke coverage for all five product roles and honest deployment state.
+- 8 gateway integration tests and 6 independent SDK/ledger tests.
+- Five-flow sandbox suite using deployed optimized WASM and six accounts.
+- Chromium smoke coverage for the public landing and honest `COMING SOON` dashboard state.
 - Onchain audit totals and NEP event logs.
+- Nineteen finalized testnet transactions, two real service receipts, a timeout refund, and three completed withdrawals.
 - Reproducible build/test commands in the README.
 
 ## Honest limitations
 
 FIRST100 cannot prevent a seller from routing economic activity outside the protocol, and settlement depends on customer confirmation. The P0 gateway is single-instance and has not received an independent security audit. These are disclosed product boundaries, not hidden assumptions.
 
-## Links to fill after deploy
+## Public links
 
-- Live app: `TBD — do not submit a placeholder`
-- Contract: `TBD — do not submit a placeholder`
-- Explorer proof: `TBD — do not submit a placeholder`
+- Live app: https://first100-liard.vercel.app
+- Contract: https://explorer.testnet.near.org/accounts/first100-v2-20261115.testnet
+- First settlement: https://explorer.testnet.near.org/transactions/2T7cBtrycCjcNxQzVDkJVxFEoCa9Rb2wAxvqESvqt8Ek
+- Post-transfer settlement: https://explorer.testnet.near.org/transactions/78ZKVU5irTEUDW9BrEKfkCB74a1dbaD3QHFbtsRcPWdN
+- Timeout refund: https://explorer.testnet.near.org/transactions/6grwuYPbzXh66FVXEV9uQcuBqMkGw7WKkLp51yHogYvD
 - 90-second video: `TBD — do not submit a placeholder`
