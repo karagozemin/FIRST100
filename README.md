@@ -86,7 +86,7 @@ Supporting documents:
 | --- | --- |
 | `contracts/revenue-rights` | Rust contract, accounting state machine, events, and NEP-171 implementation |
 | `gateway` | Payment and wallet verification, service execution, response commitment, local persistence, and serverless challenge support |
-| `sdk` | RPC helpers, canonical hashing, amount conversion, and independent ledger replay |
+| `sdk` | RPC helpers, canonical hashing, amount conversion, investor policy evaluation, and independent ledger replay |
 | `app` | Public landing plus live seller, investor, customer, holder, and auditor workflows |
 | `tests/workspaces` | Optimized WASM tests against NEAR sandbox with six accounts |
 | `tests/e2e` | Browser-level coverage for the public landing and live application route |
@@ -131,7 +131,7 @@ Default local endpoints:
 ## Build and test
 
 ```bash
-npm test                    # 33 contract + 13 gateway + 6 SDK tests
+npm test                    # 33 contract + 13 gateway + 10 SDK tests
 npm run build               # gateway, web application, and SDK production builds
 npm run build:contract      # optimized WASM and checksum
 npm run test:workspaces     # 5 end-to-end protocol tests on NEAR sandbox
@@ -188,6 +188,12 @@ Financial values are decimal yoctoNEAR strings in JSON. Nanosecond timestamps ar
 | `GET /orders/:orderId/status` | Onchain order state plus local execution record |
 
 The gateway selects a typed adapter from the order's finalized onchain `service_id`. The default registry includes deterministic NEAR account research and account risk signals, exposes request schemas, and fails closed for unconfigured service identifiers.
+
+## Investor policy engine
+
+The SDK evaluates each finalized listing against explicit limits for maximum advance, minimum remaining calls, maximum break-even calls, and allowed service identifiers. The application exposes the spending and entitlement controls beside the onchain terms and blocks its funding action when a listing fails them.
+
+This engine is deterministic decision support, not an unattended trading agent. It cannot hold a key or sign a transaction: the connected wallet must still present and approve the exact `fund_series` call.
 
 ## Evidence and verification
 

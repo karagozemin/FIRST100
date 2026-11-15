@@ -99,10 +99,10 @@ remaining entitlement = N - k
 | NEP-171 approvals | Approval, revoke, revoke-all, and enumeration compatibility | **SHIPPED** |
 | Multi-service adapters | Typed adapter registry, schemas, metering, SDK examples | **SHIPPED** |
 | Stable settlement | Whitelisted NEP-141 assets with storage and callback safety | **PLANNED** |
-| Risk view | Scenario analysis without APY or guaranteed-return language | **PLANNED** |
+| Risk view | Scenario analysis without APY or guaranteed-return language | **SHIPPED** |
 | Durable execution | Transactional leases, unique order constraint, recovery worker | **PLANNED** |
 | Independent attestation | Signed service evidence from an operator-independent verifier | **PLANNED** |
-| Investor automation | Policy-limited discovery and funding with explicit spending caps | **PLANNED** |
+| Wallet-gated investor policy | Deterministic limits for advance, entitlement, break-even, and services; explicit wallet approval | **SHIPPED** |
 
 ### P2 — Protocol expansion
 
@@ -248,7 +248,7 @@ Current automated evidence:
 
 - 33 Rust contract unit and adversarial tests;
 - 13 gateway tests;
-- 6 SDK and ledger replay tests;
+- 10 SDK, policy, and ledger replay tests;
 - 5 near-workspaces sandbox flows using six roles;
 - Chromium coverage for the landing and application route;
 - finalized public testnet evidence replay.
@@ -302,8 +302,8 @@ Secrets, private keys, fabricated hashes, and non-English repository copy are pr
 All phases are committed scope and must be completed in dependency order:
 
 1. Preserve evidence replay, accounting invariants, and adversarial coverage.
-2. Complete portfolio discovery, NFT approvals/enumeration, and durable execution storage.
-3. Add a typed service-adapter registry and publish the integration SDK.
+2. Complete portfolio discovery, NFT approvals/enumeration, typed service adapters, and wallet-gated policy evaluation.
+3. Add durable execution storage and recovery semantics.
 4. Add whitelisted NEP-141 settlement with full callback and storage tests.
 5. Add marketplace, tranches, metered sessions, and payment-protocol adapters.
 6. Add explicit cross-chain intent adapters and bounded dispute or quality modules.

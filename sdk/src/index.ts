@@ -78,6 +78,9 @@ export function breakEvenCalls(advanceYocto: string, unitPriceYocto: string): bi
   return (advance + unit - 1n) / unit;
 }
 
+export { evaluateSeriesPolicy } from "./policy.js";
+export type { InvestorPolicy, PolicyEvaluation, PolicySeries } from "./policy.js";
+
 function encodeBase64(value: string): string {
   if (typeof Buffer !== "undefined") return Buffer.from(value).toString("base64");
   return btoa(unescape(encodeURIComponent(value)));

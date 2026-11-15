@@ -66,7 +66,7 @@ The gateway resolves the order's series from finalized state and selects an adap
 | Gateway | Wallet proof, finalized payment verification, request commitment matching, typed adapter selection, service execution, response commitment, execution records | Final accounting, buyer acceptance, NFT ownership decisions |
 | Service | Deterministic finalized NEAR account research | Payment verification or settlement |
 | React application | Wallet coordination and role-specific workflows | Authoritative state, hidden accounting, evidence substitution |
-| SDK and verifier | Canonical hashing, RPC access, event replay, cap checks, evidence reconciliation | Modifying protocol state |
+| SDK and verifier | Canonical hashing, RPC access, policy evaluation, event replay, cap checks, evidence reconciliation | Modifying protocol state or signing transactions |
 | Evidence manifest | References to real finalized testnet transactions | Placeholder or simulated proof |
 
 ## Onchain domain model
@@ -90,6 +90,22 @@ A series defines:
 Multiple unfunded listings may exist, but only one funded series can be active for a service at a time.
 
 Services and series are also written to append-only discovery indexes. Paginated views apply optional status, seller, and service filters without making the web application an indexing authority.
+
+### Investor policy boundary
+
+The investor screen evaluates finalized series data locally through the SDK. A policy can constrain the advance, remaining entitlement, break-even call count, and allowed service identifiers.
+
+```mermaid
+flowchart LR
+    R[Finalized series state] --> P[Deterministic policy evaluator]
+    L[Investor limits] --> P
+    P -->|Blocked with reasons| U[Investor screen]
+    P -->|Eligible| U
+    U -->|Exact fund_series call| W[Connected wallet approval]
+    W --> C[NEAR contract]
+```
+
+Policy eligibility never grants signing authority. The evaluator has no key access, cannot submit a transaction, and does not predict demand or returns. A connected wallet must approve the exact funding call after the terms pass the selected limits.
 
 ### API order
 
@@ -294,6 +310,7 @@ The JSON store serializes mutations and uses atomic file replacement, which is a
 | `gateway/src/store.ts` | Challenge consumption and execution-record persistence |
 | `gateway/src/service.ts` | Deterministic NEAR account research implementation |
 | `sdk/src/ledger.ts` | Independent terminal-event replay |
+| `sdk/src/policy.ts` | Deterministic, wallet-gated investor policy evaluation |
 | `sdk/src/verify-ledger.ts` | Public testnet evidence verification and reconciliation |
 | `app/src/screens` | Seller, investor, customer, holder, and proof workflows |
 | `tests/workspaces` | Multi-account protocol flow against compiled WASM |

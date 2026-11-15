@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Wallet } from "@near-wallet-selector/core";
-import { breakEvenCalls, yoctoToNear } from "@first100/sdk";
+import { breakEvenCalls, evaluateSeriesPolicy, nearToYocto, yoctoToNear } from "@first100/sdk";
 import { callMethod, rpc, transactionHash } from "../near";
 import { Button, Field, Notice, Stat } from "../ui";
 import type { ActionProof, Series } from "../types";
@@ -9,6 +9,8 @@ export function Investor({ wallet, record }: { wallet: Wallet | undefined; recor
   const [seriesId, setSeriesId] = useState("first100-live-001");
   const [series, setSeries] = useState<Series>();
   const [listings, setListings] = useState<Series[]>([]);
+  const [maxAdvance, setMaxAdvance] = useState("1");
+  const [minRemaining, setMinRemaining] = useState("25");
   const [message, setMessage] = useState("");
 
   async function load(id = seriesId) {
@@ -43,6 +45,19 @@ export function Investor({ wallet, record }: { wallet: Wallet | undefined; recor
     } catch (error) { setMessage(String(error)); }
   }
 
+  let policy;
+  try {
+    if (series) {
+      policy = evaluateSeriesPolicy(series, {
+        maxAdvanceYocto: nearToYocto(maxAdvance || "0"),
+        minRemainingCalls: Math.max(0, Number(minRemaining || "0")),
+        requireBreakEvenWithinEntitlement: true,
+      });
+    }
+  } catch {
+    policy = undefined;
+  }
+
   return <section className="screen-grid">
     <div className="panel">
       <div className="eyebrow">02 · INVESTOR</div>
@@ -68,8 +83,13 @@ export function Investor({ wallet, record }: { wallet: Wallet | undefined; recor
           <Stat label="Maximum gross*" value={`${yoctoToNear((BigInt(series.unit_price_yocto) * BigInt(series.cap_n)).toString(), 2)} Ⓝ`} />
           <Stat label="Remaining" value={`${Math.max(0, series.cap_n - series.settled_count)} calls`} />
         </div>
+        <div className="form-grid policy-controls">
+          <Field label="Policy max advance · NEAR" type="number" min="0" step="0.1" value={maxAdvance} onChange={setMaxAdvance} />
+          <Field label="Minimum remaining calls" type="number" min="0" value={minRemaining} onChange={setMinRemaining} />
+        </div>
+        <Notice tone={policy?.eligible ? "ok" : "warn"}>{policy?.eligible ? "Terms pass the current spending and entitlement policy. Wallet approval is still required." : policy ? `Policy blocked: ${policy.reasons.join("; ")}.` : "Enter valid policy limits to evaluate this series."}</Notice>
         <Notice tone="warn">*Excludes gas, fees, time value, liquidity, and NEAR price risk. Sales may never happen.</Notice>
-        <Button onClick={fund} disabled={!wallet || series.status !== "LISTED"}>Fund exact advance & mint NFT</Button>
+        <Button onClick={fund} disabled={!wallet || !policy?.eligible}>Fund exact advance & mint NFT</Button>
       </> : <div className="empty-state">Load a listing to inspect its exact onchain terms.</div>}
     </div>
   </section>;
