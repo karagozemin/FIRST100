@@ -1,4 +1,12 @@
-import type { ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
+
+export const activityEventName = "first100:activity";
+
+export interface ActivityEventDetail {
+  id: string;
+  label: string;
+  state: "running" | "success" | "error";
+}
 
 export function Field(props: {
   label: string;
@@ -27,9 +35,47 @@ export function Button(props: {
   onClick: () => void | Promise<void>;
   disabled?: boolean;
   secondary?: boolean;
+  bare?: boolean;
+  className?: string;
+  activityLabel?: string;
+  loadingLabel?: string;
+  title?: string;
 }) {
-  return <button className={props.secondary ? "button secondary" : "button"} disabled={props.disabled} onClick={() => void props.onClick()}>
-    {props.children}
+  const [pending, setPending] = useState(false);
+  const actionId = useRef(crypto.randomUUID());
+  const className = [
+    props.bare ? "" : "button",
+    props.secondary && !props.bare ? "secondary" : "",
+    "async-action",
+    pending ? "is-loading" : "",
+    props.className ?? "",
+  ].filter(Boolean).join(" ");
+  const label = props.activityLabel ?? (typeof props.children === "string" ? props.children : "Processing request");
+
+  async function run() {
+    if (pending || props.disabled) return;
+    setPending(true);
+    window.dispatchEvent(new CustomEvent<ActivityEventDetail>(activityEventName, {
+      detail: { id: actionId.current, label, state: "running" },
+    }));
+    try {
+      await props.onClick();
+      window.dispatchEvent(new CustomEvent<ActivityEventDetail>(activityEventName, {
+        detail: { id: actionId.current, label, state: "success" },
+      }));
+    } catch (error) {
+      window.dispatchEvent(new CustomEvent<ActivityEventDetail>(activityEventName, {
+        detail: { id: actionId.current, label, state: "error" },
+      }));
+      console.error(error);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return <button className={className} disabled={props.disabled || pending} aria-busy={pending} title={props.title} onClick={() => void run()}>
+    <span className="action-content">{props.children}</span>
+    {pending && <span className="action-pending" aria-live="polite"><i aria-hidden="true" />{props.loadingLabel ?? "Working"}</span>}
   </button>;
 }
 

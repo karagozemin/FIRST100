@@ -14,12 +14,14 @@ export function Investor({ wallet, record }: { wallet: Wallet | undefined; recor
   const [message, setMessage] = useState("");
 
   async function load(id = seriesId) {
-    const result = await rpc.view<Series | null>("get_series", { series_id: id });
-    setSeriesId(id);
-    setSeries(result ?? undefined);
-    if (!result) setMessage("Series not found on finalized chain state.");
+    try {
+      const result = await rpc.view<Series | null>("get_series", { series_id: id });
+      setSeriesId(id);
+      setSeries(result ?? undefined);
+      setMessage(result ? "Finalized series state loaded." : "Series not found on finalized chain state.");
+    } catch (error) { setMessage(String(error)); throw error; }
   }
-  async function browse() {
+  async function browse(reportFailure = false) {
     try {
       const result = await rpc.view<Series[]>("get_series_page", {
         from_index: "0",
@@ -29,8 +31,12 @@ export function Investor({ wallet, record }: { wallet: Wallet | undefined; recor
         service_id: null,
       });
       setListings(result);
-    } catch {
+    } catch (error) {
       setListings([]);
+      if (reportFailure) {
+        setMessage(String(error));
+        throw error;
+      }
     }
   }
   useEffect(() => { void browse(); }, []);
@@ -42,7 +48,7 @@ export function Investor({ wallet, record }: { wallet: Wallet | undefined; recor
       if (hash) record({ label: "fund_series", hash });
       setMessage("Funding finalized. The revenue-right NFT was minted to this wallet.");
       await load();
-    } catch (error) { setMessage(String(error)); }
+    } catch (error) { setMessage(String(error)); throw error; }
   }
 
   let policy;
@@ -63,14 +69,14 @@ export function Investor({ wallet, record }: { wallet: Wallet | undefined; recor
       <div className="eyebrow">02 · INVESTOR</div>
       <h2>Fund cashflow—not the company.</h2>
       <p className="lede">The NFT routes future confirmed sales at settlement time. It does not grant service ownership, API keys, or prior accruals.</p>
-      <div className="inline-form"><Field label="Series ID" value={seriesId} onChange={setSeriesId} /><Button onClick={load} secondary>Load finalized state</Button></div>
-      <div className="portfolio-head"><span>DISCOVERED SERIES</span><button onClick={() => void browse()}>REFRESH</button></div>
+      <div className="inline-form"><Field label="Series ID" value={seriesId} onChange={setSeriesId} /><Button onClick={load} secondary activityLabel="Loading finalized series state">Load finalized state</Button></div>
+      <div className="portfolio-head"><span>DISCOVERED SERIES</span><Button bare onClick={() => browse(true)} activityLabel="Refreshing series discovery" loadingLabel="SYNCING">REFRESH</Button></div>
       <div className="series-list">
-        {listings.length ? listings.map((item) => <button key={item.id} className={item.id === series?.id ? "selected" : ""} onClick={() => void load(item.id)}>
+        {listings.length ? listings.map((item) => <Button bare key={item.id} className={item.id === series?.id ? "selected" : ""} onClick={() => load(item.id)} activityLabel={`Loading ${item.id}`} loadingLabel="LOADING">
           <span>{item.service_id}</span><strong>{item.id}</strong><small>{item.status} · {item.settled_count}/{item.cap_n}</small>
-        </button>) : <span className="series-list-empty">No indexed series returned yet.</span>}
+        </Button>) : <span className="series-list-empty">No indexed series returned yet.</span>}
       </div>
-      {message && <p className="result-line">{message}</p>}
+      {message && <p key={message} className="result-line">{message}</p>}
     </div>
     <div className="panel metric-panel">
       {series ? <>
@@ -89,7 +95,7 @@ export function Investor({ wallet, record }: { wallet: Wallet | undefined; recor
         </div>
         <Notice tone={policy?.eligible ? "ok" : "warn"}>{policy?.eligible ? "Terms pass the current spending and entitlement policy. Wallet approval is still required." : policy ? `Policy blocked: ${policy.reasons.join("; ")}.` : "Enter valid policy limits to evaluate this series."}</Notice>
         <Notice tone="warn">*Excludes gas, fees, time value, liquidity, and NEAR price risk. Sales may never happen.</Notice>
-        <Button onClick={fund} disabled={!wallet || !policy?.eligible}>Fund exact advance & mint NFT</Button>
+        <Button onClick={fund} disabled={!wallet || !policy?.eligible} activityLabel="Funding series and minting revenue-right NFT" loadingLabel="Awaiting wallet">Fund exact advance & mint NFT</Button>
       </> : <div className="empty-state">Load a listing to inspect its exact onchain terms.</div>}
     </div>
   </section>;

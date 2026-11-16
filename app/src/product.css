@@ -10,7 +10,9 @@
   --product-violet: #8f55f3;
 }
 
-.product-app button { cursor: pointer; }
+.product-app button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.product-app button:active:not(:disabled) { transform: scale(.975); }
+.product-app button, .product-app a { transition: color .18s ease, background-color .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease, opacity .18s ease; }
 .product-header {
   min-height: 72px;
   display: flex;
@@ -34,8 +36,8 @@
   font: 700 16px Space Grotesk, sans-serif;
   letter-spacing: -.02em;
 }
-.product-brand > span { width: 34px; height: 34px; overflow: hidden; display: grid; place-items: center; background: #fff; }
-.product-brand img { width: 55px; height: 55px; max-width: none; object-fit: cover; }
+.product-brand > span { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; background: #fff; border: 1px solid #34362f; }
+.product-brand img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .product-network, .product-explorer {
   color: var(--product-muted);
   font: 500 10px DM Mono, monospace;
@@ -56,6 +58,33 @@
   white-space: nowrap;
 }
 .product-app .wallet-button:hover { border-color: var(--product-acid); }
+
+.activity-rail {
+  position: fixed;
+  top: 82px;
+  right: clamp(18px, 4vw, 62px);
+  z-index: 80;
+  width: min(380px, calc(100vw - 36px));
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  padding: 14px 16px 13px;
+  color: #f3f2ec;
+  background: rgba(24, 26, 21, .96);
+  border: 1px solid #4d5147;
+  box-shadow: 0 14px 40px rgba(0,0,0,.35);
+  backdrop-filter: blur(18px);
+  animation: activity-in .24s ease-out both;
+}
+.activity-rail .activity-track { position: absolute; inset: 0 0 auto; height: 2px; overflow: hidden; background: #34372f; }
+.activity-rail .activity-track i { display: block; width: 42%; height: 100%; background: var(--product-acid); animation: activity-progress 1.05s ease-in-out infinite; }
+.activity-rail strong { color: var(--product-acid); font: 600 9px DM Mono, monospace; letter-spacing: .1em; }
+.activity-rail > span:last-child { overflow: hidden; color: #b9bbb3; font: 10px DM Mono, monospace; text-overflow: ellipsis; white-space: nowrap; }
+.activity-rail.success { border-color: #6f873d; }
+.activity-rail.success .activity-track i { width: 100%; animation: none; }
+.activity-rail.error { border-color: #a85d67; }
+.activity-rail.error strong { color: #ff9aa8; }
+.activity-rail.error .activity-track i { width: 100%; background: #ff7184; animation: none; }
 
 .product-main { width: min(1420px, 92vw); margin: auto; }
 .product-intro { display: grid; grid-template-columns: 1.7fr 1fr; gap: 8vw; align-items: end; padding: 66px 0 42px; }
@@ -79,6 +108,7 @@
 .product-tabs button.active { color: #10110e; background: var(--product-acid); }
 .product-tabs button.active span { color: #596b33; }
 .product-tabs button:hover:not(.active) { color: #fff; background: #181a16; }
+.product-tabs button.active { animation: tab-select .24s ease-out both; }
 
 .product-app .deployment-strip { display: flex; align-items: center; gap: 12px; padding: 12px 0; color: var(--product-muted); border-bottom: 1px solid var(--product-line); font: 10px DM Mono, monospace; }
 .product-app .deployment-strip code { overflow: hidden; color: #c8cac3; text-overflow: ellipsis; }
@@ -100,18 +130,28 @@
 .product-app button.button:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 3px 3px 0 var(--product-violet); }
 .product-app .button:disabled { cursor: not-allowed; opacity: .34; }
 .product-app .button.secondary { color: #f3f2ec; background: transparent; border-color: #4c5047; }
+.product-app .async-action { position: relative; overflow: hidden; }
+.product-app .async-action .action-content { display: inline-flex; align-items: center; justify-content: center; width: 100%; transition: opacity .16s ease, transform .16s ease; }
+.product-app .async-action.is-loading { cursor: progress; opacity: .82; }
+.product-app .button.is-loading:disabled { opacity: .82; }
+.product-app .async-action.is-loading .action-content { opacity: 0; transform: translateY(5px); }
+.product-app .action-pending { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 9px; color: currentColor; font: inherit; letter-spacing: .04em; }
+.product-app .action-pending i { width: 13px; height: 13px; border: 1.5px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: action-spin .72s linear infinite; }
+.product-app .wallet-button .action-pending { font: 500 9px DM Mono, monospace; text-transform: uppercase; }
 .product-app .button-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 22px; }
 .product-app .inline-form { display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 10px; margin-top: 34px; }
 .product-app .notice { margin: 18px 0; padding: 12px 14px; color: #afb1a9; background: #171914; border-left: 2px solid #676b60; font-size: 12px; line-height: 1.55; }
 .product-app .notice.warn { background: rgba(143,85,243,.08); border-color: var(--product-violet); }
 .product-app .notice.ok { border-color: var(--product-acid); }
-.product-app .result-line { margin-top: 18px; overflow-wrap: anywhere; color: #d2d3cd; font-size: 13px; line-height: 1.5; }
+.product-app .result-line { margin-top: 18px; overflow-wrap: anywhere; color: #d2d3cd; font-size: 13px; line-height: 1.5; animation: result-in .3s ease-out both; }
 .product-app .portfolio-head { display: flex; align-items: center; justify-content: space-between; margin-top: 30px; padding-top: 14px; border-top: 1px solid var(--product-line); color: #777a71; font: 9px DM Mono, monospace; letter-spacing: .08em; }
 .product-app .portfolio-head button { padding: 0; color: var(--product-acid); background: none; border: 0; font: inherit; }
 .product-app .portfolio-head button:disabled { color: #55584f; }
 .product-app .series-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
 .product-app .series-list > button { min-width: 0; padding: 13px; color: #d8d9d2; background: #151612; border: 1px solid #34372f; text-align: left; }
 .product-app .series-list > button:hover, .product-app .series-list > button.selected { border-color: var(--product-acid); }
+.product-app .series-list > button.is-loading { border-color: var(--product-violet); }
+.product-app .series-list .action-content { display: block; color: inherit; font: inherit; overflow: visible; text-align: inherit; white-space: normal; }
 .product-app .series-list span, .product-app .series-list small { display: block; overflow: hidden; color: #74776e; font: 8px DM Mono, monospace; text-overflow: ellipsis; white-space: nowrap; }
 .product-app .series-list strong { display: block; margin: 6px 0; overflow: hidden; font: 600 12px Space Grotesk, sans-serif; text-overflow: ellipsis; white-space: nowrap; }
 .product-app .series-list-empty { grid-column: 1 / -1; padding: 15px; color: #6e7168; border: 1px dashed #34372f; font: 9px DM Mono, monospace; }
@@ -130,7 +170,11 @@
 .product-app .stats.compact .stat strong { font-size: 14px; }
 .product-app .empty-state { min-height: 240px; display: grid; place-items: center; padding: 30px; color: #74776e; border: 1px dashed #3b3e36; text-align: center; font: 11px DM Mono, monospace; }
 .product-app .output-panel pre { min-height: 280px; max-height: 360px; margin: 0; padding: 20px; overflow: auto; color: #c9dbaa; background: #090a08; border: 1px solid #30332d; font: 12px/1.6 DM Mono, monospace; }
-.product-app .pulse { width: 8px; height: 8px; background: var(--product-violet); border-radius: 50%; box-shadow: 0 0 20px var(--product-violet); }
+.product-app .pulse { width: 8px; height: 8px; background: var(--product-violet); border-radius: 50%; box-shadow: 0 0 20px var(--product-violet); animation: ambient-pulse 1.8s ease-in-out infinite; }
+.product-app .output-reveal { animation: output-in .38s ease-out both; }
+
+.workflow-stage { position: relative; animation: workflow-in .3s ease-out both; }
+.product-app.is-processing .workflow-stage::before { content: ""; position: absolute; top: 0; left: 0; z-index: 4; width: 28%; height: 1px; pointer-events: none; background: linear-gradient(90deg, transparent, var(--product-acid), transparent); animation: workflow-scan 1.25s ease-in-out infinite; }
 
 .product-app .proof-layout { display: grid; grid-template-columns: 1fr 1.4fr; gap: 8vw; padding: 64px 0 80px; }
 .product-app .proof-stack { border: 1px solid var(--product-line); }
@@ -140,6 +184,16 @@
 .product-app .proof-row code { color: var(--product-acid); font: 10px DM Mono, monospace; }
 .product-app .contract-link { display: block; padding: 16px 18px; color: #b996f6; text-decoration: none; font-size: 12px; }
 .product-footer { min-height: 100px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 clamp(18px, 4vw, 62px); color: #6f7269; border-top: 1px solid var(--product-line); font: 9px DM Mono, monospace; letter-spacing: .05em; }
+
+@keyframes action-spin { to { transform: rotate(360deg); } }
+@keyframes activity-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } to { opacity: 1; transform: none; } }
+@keyframes activity-progress { 0% { transform: translateX(-110%); } 55%, 100% { transform: translateX(250%); } }
+@keyframes workflow-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes workflow-scan { from { transform: translateX(-100%); } to { transform: translateX(460%); } }
+@keyframes result-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+@keyframes output-in { from { opacity: 0; transform: scale(.99); filter: blur(3px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes ambient-pulse { 50% { transform: scale(1.45); opacity: .45; box-shadow: 0 0 30px var(--product-violet); } }
+@keyframes tab-select { from { box-shadow: inset 0 -4px 0 rgba(16,17,14,.4); } to { box-shadow: inset 0 0 0 transparent; } }
 
 @media (max-width: 900px) {
   .product-network, .product-explorer { display: none; }
@@ -152,6 +206,7 @@
 }
 
 @media (max-width: 620px) {
+  .activity-rail { top: 78px; right: 18px; }
   .product-header { padding: 0 16px; }
   .product-app .wallet-button { max-width: 140px; }
   .product-main { width: calc(100vw - 32px); }

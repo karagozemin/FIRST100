@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 
 test("renders the product landing and opens the live application", async ({ page }) => {
   await page.goto("/");
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute("href", "/first100-logo.png");
+  await expect(page.locator(".brand-mark img").first()).toHaveCSS("object-fit", "contain");
   await expect(page.getByRole("heading", { name: /Finance the first 100 sales/i })).toBeVisible();
   await expect(page.getByText("NOT AN ACTIVE OFFER", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Built to be checked/i })).toBeVisible();
@@ -18,4 +20,14 @@ test("renders the product landing and opens the live application", async ({ page
   await expect(page.getByRole("button", { name: "Connect wallet" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "FIRST100 workflows" })).toBeVisible();
   await expect(page.getByText("first100-v2-20261115.testnet", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Customer" }).click();
+  await page.route("https://rpc.testnet.near.org/**", async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await route.continue();
+  });
+  const quote = page.getByRole("button", { name: /Get quote/i });
+  await quote.click();
+  await expect(quote).toHaveAttribute("aria-busy", "true");
+  await expect(page.getByRole("status")).toContainText("PROCESSING");
 });

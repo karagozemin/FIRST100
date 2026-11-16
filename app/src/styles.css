@@ -25,8 +25,8 @@ button, input { font: inherit; }
 .site-shell { min-height: 100vh; overflow: hidden; }
 .site-header { height: 76px; display: flex; align-items: center; gap: 40px; padding: 0 clamp(20px, 4vw, 64px); border-bottom: 1px solid var(--line); position: relative; z-index: 10; }
 .brand { display: inline-flex; align-items: center; gap: 11px; color: var(--ink); text-decoration: none; font: 700 17px Space Grotesk, sans-serif; letter-spacing: -.02em; }
-.brand-mark { width: 35px; height: 35px; overflow: hidden; background: white; border: 1px solid rgba(17,17,15,.1); display: grid; place-items: center; }
-.brand-mark img { width: 58px; height: 58px; max-width: none; object-fit: cover; }
+.brand-mark { width: 40px; height: 40px; flex: 0 0 auto; background: white; border: 1px solid rgba(17,17,15,.1); display: grid; place-items: center; }
+.brand-mark img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .site-header nav { display: flex; gap: 30px; margin-left: auto; }
 .site-header nav a, .header-link { font: 500 11px DM Mono, monospace; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; }
 .site-header nav a { color: #55544e; }
@@ -120,8 +120,7 @@ h1 em { color: var(--violet); font-style: normal; }
 .dashboard-live:hover { transform: translate(-4px, -4px); box-shadow: 17px 17px 0 var(--violet); }
 .dashboard-top { height: 64px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid #36372f; }
 .dashboard-top .brand { color: white; font-size: 13px; }
-.dashboard-top .brand-mark { width: 28px; height: 28px; }
-.dashboard-top .brand-mark img { width: 47px; height: 47px; }
+.dashboard-top .brand-mark { width: 30px; height: 30px; }
 .dashboard-top > span { color: var(--acid); font: 500 8px DM Mono, monospace; letter-spacing: .08em; }
 .dashboard-tabs { display: grid; grid-template-columns: repeat(5, 1fr); border-bottom: 1px solid #36372f; }
 .dashboard-tabs span { padding: 13px 7px; border-right: 1px solid #36372f; color: #77786f; text-align: center; font: 500 8px DM Mono, monospace; }

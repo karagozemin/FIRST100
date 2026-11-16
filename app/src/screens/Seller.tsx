@@ -29,7 +29,7 @@ export function Seller({ wallet, accountId, record }: { wallet: Wallet | undefin
       const hash = transactionHash(outcome);
       if (hash) record({ label: "register_service", hash });
       setMessage("Service registered onchain.");
-    } catch (error) { setMessage(String(error)); } finally { setBusy(false); }
+    } catch (error) { setMessage(String(error)); throw error; } finally { setBusy(false); }
   }
 
   async function listSeries() {
@@ -49,7 +49,7 @@ export function Seller({ wallet, accountId, record }: { wallet: Wallet | undefin
       const hash = transactionHash(outcome);
       if (hash) record({ label: "create_series", hash });
       setMessage("Revenue series listed. It has no NFT until an investor funds it.");
-    } catch (error) { setMessage(String(error)); } finally { setBusy(false); }
+    } catch (error) { setMessage(String(error)); throw error; } finally { setBusy(false); }
   }
 
   return <section className="screen-grid">
@@ -62,7 +62,7 @@ export function Seller({ wallet, accountId, record }: { wallet: Wallet | undefin
         <Field label="Gateway account" value={gateway} onChange={setGateway} hint="Must submit the delivery hash onchain." />
         <Field label="Committed endpoint" value={endpoint} onChange={setEndpoint} />
       </div>
-      <Button onClick={register} disabled={busy || !wallet || !gateway}>Register service · 0.01 NEAR</Button>
+      <Button onClick={register} disabled={busy || !wallet || !gateway} activityLabel="Registering service on NEAR" loadingLabel="Awaiting wallet">Register service · 0.01 NEAR</Button>
     </div>
     <div className="panel warm">
       <div className="form-grid">
@@ -73,8 +73,8 @@ export function Seller({ wallet, accountId, record }: { wallet: Wallet | undefin
         <Field label="Offer duration · days" type="number" min="1" value={days} onChange={setDays} />
       </div>
       <Notice tone="warn">This is not a loan or guaranteed yield. Only sales settled through this contract count.</Notice>
-      <Button onClick={listSeries} disabled={busy || !wallet}>List series · 0.02 NEAR storage</Button>
-      {message && <p className="result-line">{message}</p>}
+      <Button onClick={listSeries} disabled={busy || !wallet} activityLabel="Listing revenue series on NEAR" loadingLabel="Awaiting wallet">List series · 0.02 NEAR storage</Button>
+      {message && <p key={message} className="result-line">{message}</p>}
     </div>
   </section>;
 }

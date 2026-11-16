@@ -19,9 +19,11 @@ export function Customer({ wallet, accountId, record }: { wallet: Wallet | undef
   const [message, setMessage] = useState("");
 
   async function quote() {
-    const found = (await rpc.view<Series | null>("get_series", { series_id: seriesId })) ?? undefined;
-    setSeries(found);
-    setMessage(found ? "Finalized series terms loaded." : "Series not found on finalized chain state.");
+    try {
+      const found = (await rpc.view<Series | null>("get_series", { series_id: seriesId })) ?? undefined;
+      setSeries(found);
+      setMessage(found ? "Finalized series terms loaded." : "Series not found on finalized chain state.");
+    } catch (error) { setMessage(String(error)); throw error; }
   }
   async function pay() {
     if (!wallet || !accountId || !series) return;
@@ -40,7 +42,7 @@ export function Customer({ wallet, accountId, record }: { wallet: Wallet | undef
       record({ label: "create_order", hash: txHash });
       setMessage("Payment finalized. Sign a one-time NEP-413 challenge to unlock execution.");
       await loadOrder(id);
-    } catch (error) { setMessage(String(error)); }
+    } catch (error) { setMessage(String(error)); throw error; }
   }
   async function execute() {
     if (!wallet || !accountId || !orderId) return;
@@ -77,21 +79,25 @@ export function Customer({ wallet, accountId, record }: { wallet: Wallet | undef
       setResponseHash(result.responseHash);
       if (result.deliveryTxHash) record({ label: "submit_delivery", hash: result.deliveryTxHash });
       setMessage("Real finalized NEAR data returned. Review it before confirming delivery.");
-    } catch (error) { setMessage(String(error)); }
+    } catch (error) { setMessage(String(error)); throw error; }
   }
   async function confirm() {
     if (!wallet || !orderId || !responseHash) return;
-    const outcome = await callMethod(wallet, "confirm_delivery", { order_id: orderId, response_hash: responseHash });
-    const hash = transactionHash(outcome);
-    if (hash) record({ label: "confirm_delivery", hash });
-    setMessage("Delivery confirmed; revenue accrued to the NFT owner at this settlement moment.");
-    await loadOrder(orderId);
+    try {
+      const outcome = await callMethod(wallet, "confirm_delivery", { order_id: orderId, response_hash: responseHash });
+      const hash = transactionHash(outcome);
+      if (hash) record({ label: "confirm_delivery", hash });
+      setMessage("Delivery confirmed; revenue accrued to the NFT owner at this settlement moment.");
+      await loadOrder(orderId);
+    } catch (error) { setMessage(String(error)); throw error; }
   }
   async function loadOrder(id = orderId) {
     if (!id) return;
-    const found = await rpc.view<Order | null>("get_order", { order_id: id });
-    setOrder(found ?? undefined);
-    if (!found) setMessage("Order not found on finalized chain state.");
+    try {
+      const found = await rpc.view<Order | null>("get_order", { order_id: id });
+      setOrder(found ?? undefined);
+      if (!found) setMessage("Order not found on finalized chain state.");
+    } catch (error) { setMessage(String(error)); throw error; }
   }
   async function refund() {
     if (!wallet || !orderId) return;
@@ -101,7 +107,7 @@ export function Customer({ wallet, accountId, record }: { wallet: Wallet | undef
       if (hash) record({ label: "claim_refund", hash });
       setMessage("Refund finalized as withdrawable buyer credit.");
       await loadOrder(orderId);
-    } catch (error) { setMessage(String(error)); }
+    } catch (error) { setMessage(String(error)); throw error; }
   }
 
   return <section className="screen-grid customer">
@@ -113,17 +119,17 @@ export function Customer({ wallet, accountId, record }: { wallet: Wallet | undef
         <Field label="Revenue series" value={seriesId} onChange={setSeriesId} />
         <Field label="NEAR account to research" value={target} onChange={setTarget} />
       </div>
-      <div className="button-row"><Button onClick={quote} secondary>Get quote</Button><Button onClick={pay} disabled={!wallet || !series}>Pay {series ? `${yoctoToNear(series.unit_price_yocto, 2)} Ⓝ` : "onchain"}</Button></div>
+      <div className="button-row"><Button onClick={quote} secondary activityLabel="Loading finalized service quote">Get quote</Button><Button onClick={pay} disabled={!wallet || !series} activityLabel="Creating paid onchain order" loadingLabel="Awaiting wallet">Pay {series ? `${yoctoToNear(series.unit_price_yocto, 2)} Ⓝ` : "onchain"}</Button></div>
       {orderId && <code className="order-id">Order · {orderId}{order ? ` · ${order.status}` : ""}</code>}
-      {message && <p className="result-line">{message}</p>}
+      {message && <p key={message} className="result-line">{message}</p>}
     </div>
     <div className="panel output-panel">
-      {!output ? <div className="empty-state"><span className="pulse" />Payment-gated account research appears here.</div> : <pre>{JSON.stringify(output, null, 2)}</pre>}
+      {!output ? <div className="empty-state"><span className="pulse" />Payment-gated account research appears here.</div> : <pre className="output-reveal">{JSON.stringify(output, null, 2)}</pre>}
       <div className="button-row">
-        <Button onClick={execute} disabled={!orderId || Boolean(output)}>Run paid API</Button>
-        <Button onClick={confirm} disabled={!responseHash}>Confirm delivery</Button>
-        <Button onClick={() => loadOrder()} disabled={!orderId} secondary>Refresh order</Button>
-        <Button onClick={refund} disabled={!orderId || order?.status === "SETTLED" || order?.status === "REFUNDED"} secondary>Claim timed-out refund</Button>
+        <Button onClick={execute} disabled={!orderId || Boolean(output)} activityLabel="Authorizing and running paid API" loadingLabel="Executing">Run paid API</Button>
+        <Button onClick={confirm} disabled={!responseHash} activityLabel="Confirming delivery and settling revenue" loadingLabel="Awaiting wallet">Confirm delivery</Button>
+        <Button onClick={() => loadOrder()} disabled={!orderId} secondary activityLabel="Refreshing finalized order state">Refresh order</Button>
+        <Button onClick={refund} disabled={!orderId || order?.status === "SETTLED" || order?.status === "REFUNDED"} secondary activityLabel="Claiming timed-out order refund" loadingLabel="Awaiting wallet">Claim timed-out refund</Button>
       </div>
       <Notice>Refund becomes available only after the onchain confirmation deadline. Buyer acknowledgement remains an explicit trust boundary.</Notice>
     </div>

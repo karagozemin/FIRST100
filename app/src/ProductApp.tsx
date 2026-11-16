@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Wallet } from "@near-wallet-selector/core";
 import logo from "../../first100-logo.png";
 import { contractId, explorerBase, getWalletKit, networkId, rpc } from "./near";
@@ -8,6 +8,7 @@ import { Customer } from "./screens/Customer";
 import { Holder } from "./screens/Holder";
 import { Proof } from "./screens/Proof";
 import type { ActionProof, Series, Token } from "./types";
+import { activityEventName, Button, type ActivityEventDetail } from "./ui";
 
 const tabs = ["Seller", "Investor", "Customer", "Holder", "Proof"] as const;
 const liveSeriesId = "first100-live-001";
@@ -16,6 +17,11 @@ type Tab = typeof tabs[number];
 interface AuditTotals {
   total_liabilities: string;
   solvent: boolean;
+}
+
+interface ActivityState {
+  label: string;
+  state: ActivityEventDetail["state"];
 }
 
 function readProofs(): ActionProof[] {
@@ -40,6 +46,34 @@ export default function ProductApp() {
   const [series, setSeries] = useState<Series>();
   const [owner, setOwner] = useState("Loading finalized state…");
   const [audit, setAudit] = useState<AuditTotals>();
+  const [activity, setActivity] = useState<ActivityState>();
+  const activeActions = useRef(new Map<string, string>());
+  const activityTimer = useRef<number | undefined>(undefined);
+
+  useEffect(() => {
+    const handleActivity = (event: Event) => {
+      const { id, label, state } = (event as CustomEvent<ActivityEventDetail>).detail;
+      window.clearTimeout(activityTimer.current);
+      if (state === "running") {
+        activeActions.current.set(id, label);
+        setActivity({ label, state });
+        return;
+      }
+      activeActions.current.delete(id);
+      const remaining = [...activeActions.current.values()].at(-1);
+      if (remaining) {
+        setActivity({ label: remaining, state: "running" });
+        return;
+      }
+      setActivity({ label, state });
+      activityTimer.current = window.setTimeout(() => setActivity(undefined), state === "error" ? 2400 : 1200);
+    };
+    window.addEventListener(activityEventName, handleActivity);
+    return () => {
+      window.removeEventListener(activityEventName, handleActivity);
+      window.clearTimeout(activityTimer.current);
+    };
+  }, []);
 
   useEffect(() => {
     let subscription: { unsubscribe(): void } | undefined;
@@ -91,14 +125,19 @@ export default function ProductApp() {
     await (await kit.selector.wallet()).signOut();
   }
 
-  return <div className="product-app">
+  return <div className={`product-app${activity?.state === "running" ? " is-processing" : ""}`}>
+    {activity && <div className={`activity-rail ${activity.state}`} role="status" aria-live="polite">
+      <span className="activity-track"><i /></span>
+      <strong>{activity.state === "running" ? "PROCESSING" : activity.state === "success" ? "COMPLETED" : "ACTION FAILED"}</strong>
+      <span>{activity.label}</span>
+    </div>}
     <header className="product-header">
       <a className="product-brand" href="/" aria-label="FIRST100 home">
         <span><img src={logo} alt="" /></span>FIRST100
       </a>
       <div className="product-network"><i /> {networkId.toUpperCase()} · LIVE CONTRACT</div>
       <a className="product-explorer" href={`${explorerBase}/address/${contractId}`} target="_blank" rel="noreferrer">Explorer ↗</a>
-      <button className="wallet-button" onClick={() => void (accountId ? signOut() : connect())}>{shortAccount(accountId)}</button>
+      <Button bare className="wallet-button" activityLabel={accountId ? "Disconnecting wallet" : "Opening wallet connection"} loadingLabel="Opening" onClick={accountId ? signOut : connect}>{shortAccount(accountId)}</Button>
     </header>
 
     <main className="product-main">
@@ -127,11 +166,13 @@ export default function ProductApp() {
         <span>CONTRACT</span><code>{contractId}</code><span className="configured">FINALIZED RPC</span>
       </div>
 
-      {tab === "Seller" && <Seller wallet={wallet} accountId={accountId} record={record} />}
-      {tab === "Investor" && <Investor wallet={wallet} record={record} />}
-      {tab === "Customer" && <Customer wallet={wallet} accountId={accountId} record={record} />}
-      {tab === "Holder" && <Holder wallet={wallet} accountId={accountId} record={record} />}
-      {tab === "Proof" && <Proof sessionProofs={proofs} />}
+      <div key={tab} className="workflow-stage">
+        {tab === "Seller" && <Seller wallet={wallet} accountId={accountId} record={record} />}
+        {tab === "Investor" && <Investor wallet={wallet} record={record} />}
+        {tab === "Customer" && <Customer wallet={wallet} accountId={accountId} record={record} />}
+        {tab === "Holder" && <Holder wallet={wallet} accountId={accountId} record={record} />}
+        {tab === "Proof" && <Proof sessionProofs={proofs} />}
+      </div>
     </main>
 
     <footer className="product-footer">
