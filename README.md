@@ -10,6 +10,26 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![NEAR](https://img.shields.io/badge/NEAR-Rust-00C08B)](https://near.org/)
 
+## What is FIRST100?
+
+Imagine you have built an AI API that charges 1 NEAR per request.
+
+You need funding to grow, but you do not want to sell equity or take out a loan. With FIRST100, you can offer the revenue from your next 100 API calls to an investor for 70 NEAR upfront.
+
+Here is what happens:
+
+- You receive 70 NEAR immediately.
+- The investor receives an NFT representing the revenue rights to those 100 sales.
+- Every time a customer pays for and confirms an API call, the revenue goes to the current NFT holder.
+- After the 100th eligible sale, revenue goes back to you.
+- The investor can transfer or sell the NFT before all 100 sales are completed.
+
+If all 100 sales happen, the investor collects 100 NEAR on a 70 NEAR investment. If they do not, the investor may lose money.
+
+**No equity. No company ownership. Just a defined share of future sales, enforced by a NEAR smart contract.**
+
+*Example numbers are illustrative, not a live investment offering.*
+
 FIRST100 lets an AI service finance a bounded set of future sales without selling the company, API ownership, or all future revenue. A seller lists the first `N` eligible sales, an investor funds the series and receives a NEP-171 revenue-right NFT, and each buyer-confirmed sale is routed by the contract to the NFT owner at settlement time.
 
 The repository contains the product defined by PRD v3.0: the NEAR contract, hosted authenticated service gateway, SDK, live role-based application, sandbox integration tests, evidence verifier, and deployment tooling.
