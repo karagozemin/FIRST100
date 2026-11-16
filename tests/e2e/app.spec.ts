@@ -31,3 +31,13 @@ test("renders the product landing and opens the live application", async ({ page
   await expect(quote).toHaveAttribute("aria-busy", "true");
   await expect(page.getByRole("status")).toContainText("PROCESSING");
 });
+
+test("offers supported NEAR wallets", async ({ page }) => {
+  await page.goto("/app");
+  await page.getByRole("button", { name: "Connect wallet" }).click();
+
+  await expect(page.getByRole("heading", { name: "Connect Your Wallet" })).toBeVisible();
+  await expect(page.getByText("Nightly", { exact: true })).toBeVisible();
+  await expect(page.getByText("Sender", { exact: true })).toBeVisible();
+  await expect(page.getByText("MyNearWallet", { exact: true })).toHaveCount(0);
+});

@@ -9,11 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@first100/sdk": "0.1.0",
+    "@near-js/transactions": "2.5.1",
     "@near-wallet-selector/core": "10.1.4",
     "@near-wallet-selector/modal-ui": "10.1.4",
-    "@near-wallet-selector/my-near-wallet": "10.1.4",
-    "@near-js/transactions": "2.5.1",
-    "@first100/sdk": "0.1.0",
+    "@near-wallet-selector/nightly": "10.1.4",
+    "@near-wallet-selector/sender": "10.1.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
