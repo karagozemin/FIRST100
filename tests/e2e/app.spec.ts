@@ -43,5 +43,17 @@ test("offers supported NEAR wallets", async ({ page }) => {
   await expect(page.getByText("HOT Wallet", { exact: true })).toBeVisible();
   await expect(page.getByText("Intear Wallet", { exact: true })).toBeVisible();
   await expect(page.getByText("OKX Wallet", { exact: true })).toBeVisible();
+  await expect(page.locator(".single-wallet.sidebar.meteor-wallet .first100-wallet-status")).toHaveText("INSTALL");
+  await expect(page.locator(".single-wallet.sidebar.hot-wallet .first100-wallet-status")).toHaveText("READY");
   await expect(page.getByText("MyNearWallet", { exact: true })).toHaveCount(0);
+});
+
+test("marks an injected Meteor extension as ready", async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(window, "meteorCom", { value: {}, configurable: true });
+  });
+  await page.goto("/app");
+  await page.getByRole("button", { name: "Connect wallet" }).click();
+
+  await expect(page.locator(".single-wallet.sidebar.meteor-wallet .first100-wallet-status")).toHaveText("READY");
 });

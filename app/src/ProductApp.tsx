@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Wallet } from "@near-wallet-selector/core";
 import logo from "../../first100-logo.png";
-import { contractId, explorerBase, getWalletKit, networkId, rpc } from "./near";
+import { contractId, explorerBase, getWalletKit, networkId, rpc, showWalletModal } from "./near";
 import { Seller } from "./screens/Seller";
 import { Investor } from "./screens/Investor";
 import { Customer } from "./screens/Customer";
@@ -117,7 +117,7 @@ export default function ProductApp() {
   }
 
   async function connect() {
-    (await getWalletKit()).modal.show();
+    await showWalletModal();
   }
 
   async function signOut() {

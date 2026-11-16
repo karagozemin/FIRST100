@@ -185,6 +185,11 @@
 .product-app .contract-link { display: block; padding: 16px 18px; color: #b996f6; text-decoration: none; font-size: 12px; }
 .product-footer { min-height: 100px; display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 clamp(18px, 4vw, 62px); color: #6f7269; border-top: 1px solid var(--product-line); font: 9px DM Mono, monospace; letter-spacing: .05em; }
 
+.nws-modal-wrapper .single-wallet.sidebar .first100-wallet-status { margin-left: auto; padding: 3px 7px; border: 1px solid currentColor; border-radius: 999px; color: #9a9a94; font: 500 8px/1 DM Mono, monospace; letter-spacing: .08em; }
+.nws-modal-wrapper .single-wallet.sidebar .first100-wallet-status[data-status="ready"] { color: #9dcc35; }
+.nws-modal-wrapper .single-wallet.sidebar.selected-wallet .first100-wallet-status { color: #fff; }
+.nws-modal-wrapper .wallet-not-installed-wrapper .first100-wallet-help { max-width: 390px; margin: 12px auto 0; padding: 10px 12px; color: #9dcc35; border: 1px solid rgba(157,204,53,.45); font: 500 10px/1.5 DM Mono, monospace; }
+
 @keyframes action-spin { to { transform: rotate(360deg); } }
 @keyframes activity-in { from { opacity: 0; transform: translateY(-8px) scale(.98); } to { opacity: 1; transform: none; } }
 @keyframes activity-progress { 0% { transform: translateX(-110%); } 55%, 100% { transform: translateX(250%); } }

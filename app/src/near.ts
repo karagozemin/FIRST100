@@ -37,13 +37,66 @@ export const rpc = new First100Rpc({ contractId, rpcUrls: [rpcUrl] });
 
 let selectorPromise: Promise<{ selector: WalletSelector; modal: WalletSelectorModal }> | undefined;
 
+const meteorExtensionUrl = "https://chromewebstore.google.com/detail/meteor-wallet/pcndjhkinnkaohffealmlmhaepkpmgkb";
+
+function extensionAvailable(factory: WalletModuleFactory, check: () => boolean, downloadUrl?: string): WalletModuleFactory {
+  return async (options) => {
+    const module = await factory(options);
+    if (!module) return null;
+    module.metadata.available = check();
+    if (downloadUrl) (module.metadata as typeof module.metadata & { downloadUrl?: string }).downloadUrl = downloadUrl;
+    return module;
+  };
+}
+
+function injectedWalletWindow() {
+  return window as Window & {
+    meteorCom?: unknown;
+    nightly?: { near?: unknown };
+  };
+}
+
+function annotateWalletOptions(selector: WalletSelector) {
+  const renderStatuses = () => {
+    for (const module of selector.store.getState().modules) {
+      const row = document.querySelector<HTMLElement>(`.single-wallet.sidebar.${CSS.escape(module.id)}`);
+      if (!row) continue;
+      const status = module.metadata.available ? "READY" : "INSTALL";
+      let badge = row.querySelector<HTMLElement>(".first100-wallet-status");
+      if (!badge) {
+        badge = document.createElement("span");
+        badge.className = "first100-wallet-status";
+        row.append(badge);
+      }
+      const normalizedStatus = status.toLowerCase();
+      if (badge.dataset.status !== normalizedStatus) badge.dataset.status = normalizedStatus;
+      if (badge.textContent !== status) badge.textContent = status;
+      const label = `${module.metadata.name} — ${status}`;
+      if (row.getAttribute("aria-label") !== label) row.setAttribute("aria-label", label);
+    }
+
+    const installPanel = document.querySelector<HTMLElement>(".wallet-not-installed-wrapper");
+    if (installPanel?.textContent?.includes("Meteor Wallet") && !installPanel.querySelector(".first100-wallet-help")) {
+      const help = document.createElement("p");
+      help.className = "first100-wallet-help";
+      help.textContent = "Already installed? Allow Meteor Wallet to access this site, then refresh the page.";
+      installPanel.append(help);
+    }
+  };
+
+  const observer = new MutationObserver(renderStatuses);
+  observer.observe(document.body, { childList: true, subtree: true });
+  renderStatuses();
+  window.setTimeout(() => observer.disconnect(), 5_000);
+}
+
 export function getWalletKit() {
   selectorPromise ??= setupWalletSelector({
     network: networkId,
     modules: [
-      setupMeteorWallet(),
+      extensionAvailable(setupMeteorWallet(), () => Boolean(injectedWalletWindow().meteorCom), meteorExtensionUrl),
       setupMeteorWalletApp({ contractId }),
-      setupNightly(),
+      extensionAvailable(setupNightly(), () => Boolean(injectedWalletWindow().nightly?.near)),
       setupSender(),
       setupHotWallet(),
       setupHereWallet(),
@@ -64,6 +117,12 @@ export function getWalletKit() {
     ],
   }).then((selector) => ({ selector, modal: setupModal(selector, { contractId }) }));
   return selectorPromise;
+}
+
+export async function showWalletModal() {
+  const kit = await getWalletKit();
+  kit.modal.show();
+  annotateWalletOptions(kit.selector);
 }
 
 export async function callMethod(
