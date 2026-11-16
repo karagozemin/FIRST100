@@ -187,6 +187,13 @@
 
 .nws-modal-wrapper .single-wallet.sidebar .first100-wallet-status { margin-left: auto; padding: 3px 7px; border: 1px solid currentColor; border-radius: 999px; color: #9a9a94; font: 500 8px/1 DM Mono, monospace; letter-spacing: .08em; }
 .nws-modal-wrapper .single-wallet.sidebar .first100-wallet-status[data-status="ready"] { color: #9dcc35; }
+.nws-modal-wrapper .single-wallet.sidebar .first100-wallet-status[data-status="install"] { color: #b996f6; }
+.nws-modal-wrapper .single-wallet.sidebar[data-wallet-status="install"] { cursor: pointer; }
+.nws-modal-wrapper .single-wallet.sidebar[data-wallet-status="install"] .first100-wallet-status::after { content: " ↗"; }
+.nws-modal-wrapper .single-wallet.sidebar .first100-wallet-status[data-status="web"],
+.nws-modal-wrapper .single-wallet.sidebar .first100-wallet-status[data-status="mobile"],
+.nws-modal-wrapper .single-wallet.sidebar .first100-wallet-status[data-status="device"],
+.nws-modal-wrapper .single-wallet.sidebar .first100-wallet-status[data-status="snap"] { color: #83b9ef; }
 .nws-modal-wrapper .single-wallet.sidebar.selected-wallet .first100-wallet-status { color: #fff; }
 .nws-modal-wrapper .wallet-not-installed-wrapper .first100-wallet-help { max-width: 390px; margin: 12px auto 0; padding: 10px 12px; color: #9dcc35; border: 1px solid rgba(157,204,53,.45); font: 500 10px/1.5 DM Mono, monospace; }
 

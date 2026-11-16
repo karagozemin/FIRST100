@@ -44,8 +44,33 @@ test("offers supported NEAR wallets", async ({ page }) => {
   await expect(page.getByText("Intear Wallet", { exact: true })).toBeVisible();
   await expect(page.getByText("OKX Wallet", { exact: true })).toBeVisible();
   await expect(page.locator(".single-wallet.sidebar.meteor-wallet .first100-wallet-status")).toHaveText("INSTALL");
-  await expect(page.locator(".single-wallet.sidebar.hot-wallet .first100-wallet-status")).toHaveText("READY");
+  await expect(page.locator(".single-wallet.sidebar.nightly .first100-wallet-status")).toHaveText("INSTALL");
+  await expect(page.locator(".single-wallet.sidebar.sender .first100-wallet-status")).toHaveText("INSTALL");
+  await expect(page.locator(".single-wallet.sidebar.hot-wallet .first100-wallet-status")).toHaveText("WEB");
+  await expect(page.locator(".single-wallet.sidebar.intear-wallet .first100-wallet-status")).toHaveText("WEB");
+  await expect(page.locator(".first100-wallet-status[data-status=ready]")).toHaveCount(0);
+  const installTargets = await page.locator('.single-wallet.sidebar[data-wallet-status="install"]').evaluateAll((rows) =>
+    rows.map((row) => (row as HTMLElement).dataset.installUrl),
+  );
+  expect(installTargets.length).toBeGreaterThan(0);
+  expect(installTargets.every((url) => url?.startsWith("https://"))).toBe(true);
   await expect(page.getByText("MyNearWallet", { exact: true })).toHaveCount(0);
+});
+
+test("opens the official install page for a missing extension", async ({ page }) => {
+  await page.goto("/app");
+  await page.getByRole("button", { name: "Connect wallet" }).click();
+
+  const meteor = page.locator(".single-wallet.sidebar.meteor-wallet");
+  await expect(meteor).toHaveAttribute(
+    "data-install-url",
+    "https://chromewebstore.google.com/detail/meteor-wallet/pcndjhkinnkaohffealmlmhaepkpmgkb",
+  );
+  const popupPromise = page.waitForEvent("popup");
+  await meteor.click();
+  const popup = await popupPromise;
+  await expect.poll(() => popup.url()).toContain("chromewebstore.google.com/detail/meteor-wallet/");
+  await popup.close();
 });
 
 test("marks an injected Meteor extension as ready", async ({ page }) => {

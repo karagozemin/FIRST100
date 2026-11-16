@@ -1,5 +1,6 @@
 import {
   setupWalletSelector,
+  type ModuleState,
   type Wallet,
   type WalletModuleFactory,
   type WalletSelector,
@@ -39,6 +40,81 @@ let selectorPromise: Promise<{ selector: WalletSelector; modal: WalletSelectorMo
 
 const meteorExtensionUrl = "https://chromewebstore.google.com/detail/meteor-wallet/pcndjhkinnkaohffealmlmhaepkpmgkb";
 
+type WalletStatus = "READY" | "INSTALL" | "WEB" | "MOBILE" | "DEVICE" | "SNAP";
+
+type ProviderWindow = Window & {
+  bitkeep?: { near?: unknown };
+  coin98?: unknown;
+  dapp?: unknown;
+  hotExtension?: unknown;
+  meteorCom?: unknown;
+  narwallets?: unknown;
+  near?: { isSender?: boolean };
+  nearWalletApi?: unknown;
+  nightly?: { near?: unknown };
+  okxwallet?: { near?: unknown };
+  xfi?: { near?: unknown };
+};
+
+const extensionDetectors: Record<string, () => boolean> = {
+  "bitget-wallet": () => Boolean(providerWindow().bitkeep?.near),
+  "coin98-wallet": () => Boolean(providerWindow().coin98),
+  "hot-wallet": () => Boolean(providerWindow().hotExtension),
+  "math-wallet": () => Boolean(providerWindow().nearWalletApi),
+  "meteor-wallet": () => Boolean(providerWindow().meteorCom),
+  narwallets: () => Boolean(providerWindow().narwallets),
+  nightly: () => Boolean(providerWindow().nightly?.near),
+  "okx-wallet": () => Boolean(providerWindow().okxwallet?.near),
+  sender: () => Boolean(providerWindow().near?.isSender),
+  "welldone-wallet": () => Boolean(providerWindow().dapp),
+  xdefi: () => Boolean(providerWindow().xfi?.near),
+};
+
+const webWalletIds = new Set([
+  "arepa-wallet",
+  "bitte-wallet",
+  "here-wallet",
+  "intear-wallet",
+  "meteor-wallet-app",
+  "ramper-wallet",
+]);
+
+function providerWindow() {
+  return window as ProviderWindow;
+}
+
+function walletStatus(module: ModuleState): WalletStatus {
+  const detectsExtension = extensionDetectors[module.id];
+  if (detectsExtension) {
+    const ready = detectsExtension();
+    if (module.id === "hot-wallet") {
+      module.metadata.available = true;
+      return ready ? "READY" : "WEB";
+    }
+    module.metadata.available = ready;
+    return ready ? "READY" : "INSTALL";
+  }
+  if (module.id === "near-snap") return "SNAP";
+  if (module.id === "near-mobile-wallet") return "MOBILE";
+  if (module.type === "hardware") return "DEVICE";
+  if (module.type === "browser" || module.type === "instant-link" || webWalletIds.has(module.id)) return "WEB";
+  return module.metadata.available ? "READY" : "INSTALL";
+}
+
+function walletDownloadUrl(module: ModuleState) {
+  const value = (module.metadata as typeof module.metadata & { downloadUrl?: unknown }).downloadUrl;
+  return typeof value === "string" && /^https:\/\//.test(value) ? value : undefined;
+}
+
+function openInstallPage(event: MouseEvent | KeyboardEvent) {
+  const row = event.currentTarget as HTMLElement;
+  if (row.dataset.walletStatus !== "install" || !row.dataset.installUrl) return;
+  if (event instanceof KeyboardEvent && event.key !== "Enter" && event.key !== " ") return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  window.open(row.dataset.installUrl, "_blank", "noopener,noreferrer");
+}
+
 function extensionAvailable(factory: WalletModuleFactory, check: () => boolean, downloadUrl?: string): WalletModuleFactory {
   return async (options) => {
     const module = await factory(options);
@@ -49,19 +125,12 @@ function extensionAvailable(factory: WalletModuleFactory, check: () => boolean, 
   };
 }
 
-function injectedWalletWindow() {
-  return window as Window & {
-    meteorCom?: unknown;
-    nightly?: { near?: unknown };
-  };
-}
-
 function annotateWalletOptions(selector: WalletSelector) {
   const renderStatuses = () => {
     for (const module of selector.store.getState().modules) {
       const row = document.querySelector<HTMLElement>(`.single-wallet.sidebar.${CSS.escape(module.id)}`);
       if (!row) continue;
-      const status = module.metadata.available ? "READY" : "INSTALL";
+      const status = walletStatus(module);
       let badge = row.querySelector<HTMLElement>(".first100-wallet-status");
       if (!badge) {
         badge = document.createElement("span");
@@ -71,6 +140,15 @@ function annotateWalletOptions(selector: WalletSelector) {
       const normalizedStatus = status.toLowerCase();
       if (badge.dataset.status !== normalizedStatus) badge.dataset.status = normalizedStatus;
       if (badge.textContent !== status) badge.textContent = status;
+      row.dataset.walletStatus = normalizedStatus;
+      const installUrl = status === "INSTALL" ? walletDownloadUrl(module) : undefined;
+      if (installUrl) row.dataset.installUrl = installUrl;
+      else delete row.dataset.installUrl;
+      if (!row.dataset.installNavigationBound) {
+        row.addEventListener("click", openInstallPage, true);
+        row.addEventListener("keydown", openInstallPage, true);
+        row.dataset.installNavigationBound = "true";
+      }
       const label = `${module.metadata.name} — ${status}`;
       if (row.getAttribute("aria-label") !== label) row.setAttribute("aria-label", label);
     }
@@ -86,17 +164,21 @@ function annotateWalletOptions(selector: WalletSelector) {
 
   const observer = new MutationObserver(renderStatuses);
   observer.observe(document.body, { childList: true, subtree: true });
+  const refresh = window.setInterval(renderStatuses, 250);
   renderStatuses();
-  window.setTimeout(() => observer.disconnect(), 5_000);
+  window.setTimeout(() => {
+    window.clearInterval(refresh);
+    observer.disconnect();
+  }, 5_000);
 }
 
 export function getWalletKit() {
   selectorPromise ??= setupWalletSelector({
     network: networkId,
     modules: [
-      extensionAvailable(setupMeteorWallet(), () => Boolean(injectedWalletWindow().meteorCom), meteorExtensionUrl),
+      extensionAvailable(setupMeteorWallet(), extensionDetectors["meteor-wallet"]!, meteorExtensionUrl),
       setupMeteorWalletApp({ contractId }),
-      extensionAvailable(setupNightly(), () => Boolean(injectedWalletWindow().nightly?.near)),
+      extensionAvailable(setupNightly(), extensionDetectors.nightly!),
       setupSender(),
       setupHotWallet(),
       setupHereWallet(),
