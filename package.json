@@ -10,7 +10,7 @@
     "tests/workspaces"
   ],
   "scripts": {
-    "build": "npm run build -w gateway && npm run build -w app && npm run build -w sdk",
+    "build": "npm run build -w sdk && npm run build -w gateway && npm run build -w app",
     "build:vercel": "npm run build -w sdk && npm run build -w app",
     "test": "cargo test -p first100-revenue-rights --lib && npm run test -w gateway && npm run test -w sdk",
     "test:contract": "cargo test -p first100-revenue-rights --lib",

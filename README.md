@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="first100-logo.png" alt="FIRST100" width="220" />
+</p>
+
 # FIRST100
 
 **Verifiable, transferable revenue rights for paid AI services on NEAR.**
