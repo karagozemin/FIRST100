@@ -1,7 +1,30 @@
-import { setupWalletSelector, type WalletSelector, type Wallet } from "@near-wallet-selector/core";
+import {
+  setupWalletSelector,
+  type Wallet,
+  type WalletModuleFactory,
+  type WalletSelector,
+} from "@near-wallet-selector/core";
 import { setupModal, type WalletSelectorModal } from "@near-wallet-selector/modal-ui";
+import { setupArepaWallet } from "@near-wallet-selector/arepa-wallet";
+import { setupBitgetWallet } from "@near-wallet-selector/bitget-wallet";
+import { setupBitteWallet } from "@near-wallet-selector/bitte-wallet";
+import { setupCoin98Wallet } from "@near-wallet-selector/coin98-wallet";
+import { setupHereWallet } from "@near-wallet-selector/here-wallet";
+import { setupHotWallet } from "@near-wallet-selector/hot-wallet";
+import { setupIntearWallet } from "@near-wallet-selector/intear-wallet";
+import { setupLedger } from "@near-wallet-selector/ledger";
+import { setupMathWallet } from "@near-wallet-selector/math-wallet";
+import { setupMeteorWallet } from "@near-wallet-selector/meteor-wallet";
+import { setupMeteorWalletApp } from "@near-wallet-selector/meteor-wallet-app";
+import { setupNarwallets } from "@near-wallet-selector/narwallets";
+import { setupNearMobileWallet } from "@near-wallet-selector/near-mobile-wallet";
+import { setupNearSnap } from "@near-wallet-selector/near-snap";
 import { setupNightly } from "@near-wallet-selector/nightly";
+import { setupOKXWallet } from "@near-wallet-selector/okx-wallet";
+import { setupRamperWallet } from "@near-wallet-selector/ramper-wallet";
 import { setupSender } from "@near-wallet-selector/sender";
+import { setupWelldoneWallet } from "@near-wallet-selector/welldone-wallet";
+import { setupXDEFI } from "@near-wallet-selector/xdefi";
 import { First100Rpc } from "@first100/sdk";
 import { actionCreators } from "@near-js/transactions";
 
@@ -17,7 +40,28 @@ let selectorPromise: Promise<{ selector: WalletSelector; modal: WalletSelectorMo
 export function getWalletKit() {
   selectorPromise ??= setupWalletSelector({
     network: networkId,
-    modules: [setupNightly(), setupSender()],
+    modules: [
+      setupMeteorWallet(),
+      setupMeteorWalletApp({ contractId }),
+      setupNightly(),
+      setupSender(),
+      setupHotWallet(),
+      setupHereWallet(),
+      setupIntearWallet(),
+      setupBitteWallet() as unknown as WalletModuleFactory,
+      setupOKXWallet(),
+      setupBitgetWallet(),
+      setupCoin98Wallet(),
+      setupNearSnap(),
+      setupLedger(),
+      setupNearMobileWallet(),
+      setupArepaWallet(),
+      setupMathWallet(),
+      setupNarwallets(),
+      setupRamperWallet(),
+      setupWelldoneWallet(),
+      setupXDEFI(),
+    ],
   }).then((selector) => ({ selector, modal: setupModal(selector, { contractId }) }));
   return selectorPromise;
 }

@@ -1,5 +1,7 @@
+import { lazy, Suspense } from "react";
 import logo from "../../first100-logo.png";
-import ProductApp from "./ProductApp";
+
+const ProductApp = lazy(() => import("./ProductApp"));
 
 const githubUrl = "https://github.com/karagozemin/FIRST100";
 const architectureUrl = `${githubUrl}/blob/main/docs/ARCHITECTURE.md`;
@@ -17,7 +19,9 @@ function Brand() {
 }
 
 export default function App() {
-  if (window.location.pathname.replace(/\/$/, "") === "/app") return <ProductApp />;
+  if (window.location.pathname.replace(/\/$/, "") === "/app") {
+    return <Suspense fallback={<div className="route-loader" role="status">Loading FIRST100</div>}><ProductApp /></Suspense>;
+  }
 
   return <div id="top" className="site-shell">
     <header className="site-header">

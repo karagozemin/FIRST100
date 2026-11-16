@@ -37,7 +37,11 @@ test("offers supported NEAR wallets", async ({ page }) => {
   await page.getByRole("button", { name: "Connect wallet" }).click();
 
   await expect(page.getByRole("heading", { name: "Connect Your Wallet" })).toBeVisible();
+  await expect(page.getByText("Meteor Wallet", { exact: true })).toBeVisible();
   await expect(page.getByText("Nightly", { exact: true })).toBeVisible();
   await expect(page.getByText("Sender", { exact: true })).toBeVisible();
+  await expect(page.getByText("HOT Wallet", { exact: true })).toBeVisible();
+  await expect(page.getByText("Intear Wallet", { exact: true })).toBeVisible();
+  await expect(page.getByText("OKX Wallet", { exact: true })).toBeVisible();
   await expect(page.getByText("MyNearWallet", { exact: true })).toHaveCount(0);
 });
